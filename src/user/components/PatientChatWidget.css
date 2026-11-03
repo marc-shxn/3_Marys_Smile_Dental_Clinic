@@ -1,0 +1,53 @@
+.patient-chat-widget{position:relative;z-index:9000}
+.patient-chat-launcher{position:fixed;right:clamp(16px,3vw,34px);bottom:calc(clamp(16px,3vh,28px) + env(safe-area-inset-bottom,0px));z-index:9010;display:flex;align-items:center;gap:10px;min-height:54px;padding:0 16px;border:1px solid #bce8d0;border-radius:28px;background:#fff;color:#08734f;box-shadow:0 8px 24px #173d3420;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,background .18s ease}
+.patient-chat-launcher:hover{transform:translateY(-2px);background:#f3fbf6;box-shadow:0 12px 28px #173d3426}
+.patient-chat-launcher:active{transform:scale(.97)}
+.patient-chat-launcher>svg{width:21px;height:21px;flex:none}
+.patient-chat-launcher-label{font:700 12px 'DM Sans','Segoe UI',sans-serif;white-space:nowrap}
+.patient-chat-launcher.is-open{width:54px;justify-content:center;padding:0;border-radius:50%;background:#eaf9f1}
+.patient-chat-launcher.is-open .patient-chat-launcher-label{display:none}
+.patient-chat-badge{position:absolute;top:-5px;right:-4px;display:grid;min-width:20px;height:20px;place-items:center;padding:0 5px;border:2px solid #fff;border-radius:20px;background:#d85a55;color:#fff;font:700 9px 'DM Sans','Segoe UI',sans-serif}
+.patient-chat-panel{position:fixed;right:clamp(16px,3vw,34px);bottom:calc(168px + env(safe-area-inset-bottom,0px));z-index:9011;display:flex;width:min(380px,calc(100vw - 28px));height:min(550px,calc(100dvh - 190px));min-height:340px;flex-direction:column;overflow:hidden;border:1px solid #dcebe3;border-radius:19px;background:#f8fcfa;box-shadow:0 22px 60px #153b322b;color:#173d34;font-family:'DM Sans','Segoe UI',sans-serif;animation:patient-chat-in .18s ease-out}
+.patient-chat-header{display:flex;min-height:72px;align-items:center;gap:11px;padding:12px 15px;border-bottom:1px solid #e3eee8;background:#fff}
+.patient-chat-header>img{width:42px;height:42px;flex:none;border:1px solid #d6eee0;border-radius:50%;object-fit:cover}
+.patient-chat-header>div{min-width:0;flex:1}
+.patient-chat-header b,.patient-chat-header small{display:block}
+.patient-chat-header b{color:#173d34;font-size:13px}
+.patient-chat-header small{margin-top:3px;color:#82958c;font-size:10px}
+.patient-chat-online{width:8px;height:8px;border-radius:50%;background:#68dfa0;box-shadow:0 0 0 4px #eaf9f1}
+.patient-chat-header>button{width:34px;height:34px;flex:none;border:0;border-radius:50%;background:#f2f8f4;color:#5c7669;font-size:22px;line-height:1;cursor:pointer}
+.patient-chat-thread{display:flex;min-height:0;flex:1;flex-direction:column;gap:12px;overflow-y:auto;padding:16px 14px}
+.patient-chat-welcome{display:grid;justify-items:center;align-content:center;max-width:290px;min-height:100%;margin:auto;text-align:center}
+.patient-chat-welcome-icon{display:grid;width:46px;height:46px;place-items:center;margin-bottom:13px;border-radius:15px;background:#eaf9f1;color:#13825f}
+.patient-chat-welcome-icon svg{width:23px;height:23px}
+.patient-chat-welcome>b{color:#24483a;font-size:13px;line-height:1.45}
+.patient-chat-welcome>p{margin:8px 0 11px;color:#748b82;font-size:11px;line-height:1.65}
+.patient-chat-welcome>small{color:#91a198;font-size:9px}
+.patient-chat-faqs{display:flex;gap:7px;overflow-x:auto;padding:9px 12px;border-top:1px solid #e8f0eb;background:#fff;scrollbar-width:thin;scrollbar-color:#c9e4d4 transparent}
+.patient-chat-faqs button{flex:0 0 auto;min-height:31px;padding:6px 10px;border:1px solid #cfe9da;border-radius:17px;background:#f8fcfa;color:#167452;font:600 10px/1.25 'DM Sans','Segoe UI',sans-serif;white-space:nowrap;cursor:pointer;transition:background .15s ease,border-color .15s ease,transform .15s ease}
+.patient-chat-faqs button:hover:not(:disabled){transform:translateY(-1px);border-color:#91dcb1;background:#effaf3}
+.patient-chat-faqs button:disabled{opacity:.55;cursor:wait}
+.patient-chat-message{display:flex;max-width:94%;flex-direction:column;gap:6px;align-self:flex-start}
+.patient-chat-message.from-patient{align-self:flex-end}
+.patient-chat-bubble{max-width:100%;padding:13px 15px;border:1px solid #e1eee7;border-radius:14px 14px 14px 4px;background:#fff;color:#35594c;font-size:clamp(12px,1.35vw,14px);line-height:1.7;overflow-wrap:anywhere;white-space:pre-wrap}
+.patient-chat-bubble a{color:#08734f;font-weight:700;text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
+.patient-chat-message.from-patient .patient-chat-bubble{border-color:#c7efd8;border-radius:14px 14px 4px 14px;background:#eaf9f1;color:#174c38}
+.patient-chat-meta{display:flex;gap:8px;padding:0 3px;color:#91a198;font-size:10px}
+.patient-chat-message.from-patient .patient-chat-meta{justify-content:flex-end}
+.patient-chat-loading{display:flex;align-items:center;justify-content:center;gap:9px;margin:auto;color:#71877d;font-size:11px}
+.patient-chat-loading i{width:14px;height:14px;border:2px solid #d7ece0;border-top-color:#13825f;border-radius:50%;animation:patient-chat-spin .7s linear infinite}
+.patient-chat-error{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;padding:9px 10px;border:1px solid #f0c8c3;border-radius:10px;background:#fff7f6;color:#8e4741;font-size:10px;line-height:1.45}
+.patient-chat-error button{flex:none;padding:6px 9px;border:1px solid #e8c0bb;border-radius:7px;background:#fff;color:#854941;font-size:10px;font-weight:700}
+.patient-chat-composer{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 42px;gap:8px;padding:11px 12px;border-top:1px solid #e3eee8;background:#fff}
+.patient-chat-composer textarea{width:100%;min-height:42px;max-height:110px;resize:vertical;padding:11px 12px;border:1px solid #dceae3;border-radius:12px;background:#fbfdfc;color:#294f40;font:400 12px/1.5 'DM Sans','Segoe UI',sans-serif;outline:none}
+.patient-chat-composer textarea:focus{border-color:#74d9a0;box-shadow:0 0 0 3px #e5f8ec}
+.patient-chat-composer textarea::placeholder{color:#9aaba2}
+.patient-chat-composer>button{display:grid;width:42px;height:42px;place-items:center;align-self:end;border:0;border-radius:12px;background:#16825f;color:#fff;cursor:pointer}
+.patient-chat-composer>button svg{width:18px;height:18px}
+.patient-chat-composer>button:disabled{background:#dbe9e0;color:#93a59a;cursor:not-allowed}
+.patient-chat-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@keyframes patient-chat-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes patient-chat-spin{to{transform:rotate(360deg)}}
+@media(max-width:700px){.patient-chat-launcher{right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));min-height:48px;padding:0 14px}.patient-chat-launcher.is-open{width:48px}.patient-chat-panel{right:12px;bottom:calc(148px + env(safe-area-inset-bottom,0px));width:min(380px,calc(100vw - 24px));height:min(540px,calc(100dvh - 168px));min-height:300px;border-radius:17px}}
+@media(max-width:380px){.patient-chat-launcher{right:12px;min-height:44px}.patient-chat-panel{right:8px;width:calc(100vw - 16px)}}
+@media(prefers-reduced-motion:reduce){.patient-chat-launcher,.patient-chat-panel{transition:none;animation:none}.patient-chat-loading i{animation:none}}

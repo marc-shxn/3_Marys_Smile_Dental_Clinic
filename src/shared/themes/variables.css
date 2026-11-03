@@ -1,0 +1,6 @@
+:root {
+  --primary: #13825f; --primary-dark: #07583b; --primary-soft: #eaf9f1; --primary-bright: #68dfa0;
+  --bg: #f7fbf9; --surface: #fff; --surface-soft: #f7fbf9; --text: #173d34; --muted: #748b82; --border: #e1eee7;
+  --blue: #4d8de2; --purple: #8668d8; --orange: #c6852a; --danger: #bd5960;
+  --sidebar: 212px; --header: 64px; --radius: 14px; --font-body: 'DM Sans','Segoe UI',sans-serif; --font-heading: 'Manrope','DM Sans',sans-serif;
+}

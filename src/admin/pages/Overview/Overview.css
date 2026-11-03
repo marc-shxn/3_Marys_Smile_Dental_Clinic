@@ -1,0 +1,20 @@
+.overview{gap:13px}.table-action{padding:6px 9px;border:1px solid var(--border);border-radius:7px;background:var(--primary-soft);color:var(--primary);font-size:9px;font-weight:700}.table-action:hover{background:#dff2e7}.overview .stat-top>span{font-size:12px}.overview .stat-top>span svg{width:18px;height:18px}.overview .quick-grid button{min-height:82px;flex-direction:column;gap:6px}.overview .quick-grid button span{width:38px;height:38px;border-radius:14px}.overview .quick-grid button span svg{width:21px;height:21px}.overview .empty-icon svg{width:22px;height:22px}
+.overview .overview-grid{grid-template-columns:minmax(0,1fr)}
+.overview .welcome{grid-template-columns:minmax(200px,1fr) minmax(250px,284px)}.overview .date-card{min-height:70px;align-items:stretch;padding:12px 14px}.date-card-copy{display:flex;flex-direction:column;justify-content:center;gap:5px}.date-card-copy>span{font-size:12px;font-weight:600}.date-card-copy>small{margin:0;color:#748b82;font-size:9px}.date-weather-summary{display:flex;align-items:center;flex-direction:column;justify-content:space-between;gap:3px;color:#173d34}.date-weather-summary svg{width:18px;height:18px;color:#13825f}.date-weather-summary strong{font-size:16px;line-height:1;font-weight:700}
+.overview .overview-schedule-action{min-height:36px;padding:0 14px;border:1px solid #bdebd2;border-radius:8px;background:#68dfa0;color:#07583b;font-size:10px;white-space:nowrap;box-shadow:none;transition:outline-color .15s ease}.overview .overview-schedule-action:hover{background:#5bd593;color:#07583b;filter:none;transform:none;outline:2px solid #a8dfc1;outline-offset:2px}
+.overview-recent-messages .panel-title{margin-bottom:14px}
+.overview-message-card{display:flex;width:100%;min-width:0;align-items:center;gap:12px;border:1px solid transparent;border-radius:12px;padding:10px;background:#fff;color:inherit;text-align:left;cursor:pointer;transition:border-color .16s ease,background-color .16s ease,transform .16s ease}
+.overview-message-card:hover{transform:translateY(-1px);border-color:#d7ebe0;background:#f7fcf9}
+.overview-message-card:focus-visible{outline:3px solid #91cbd2;outline-offset:2px}
+.overview-message-copy{display:grid;min-width:0;flex:1;gap:4px}
+.overview-message-copy b,.overview-message-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.overview-messages-empty{min-height:216px;padding:18px 14px;border-radius:14px}
+.overview-messages-empty .empty-icon{width:60px;height:60px;margin-bottom:12px;border-radius:17px}
+.overview-messages-empty .empty-icon svg{width:28px;height:28px}
+.overview-messages-empty h3{max-width:100%;font-size:16px;font-weight:600;line-height:1.4}
+.overview-messages-empty p{max-width:100%;margin:8px 0 0;font-size:14px;line-height:1.5}
+.overview-messages-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;color:#6f897d;font-size:14px}
+.overview-messages-view-all{min-height:38px;padding:0 16px;border:0;border-radius:14px;background:#eaf8f0;color:#16835d;font-size:14px;font-weight:600;transition:background .15s ease}
+.overview-messages-view-all:hover{background:#dcf3e6}
+@media(max-width:900px){.overview .welcome{grid-template-columns:minmax(0,1fr) auto}.overview .date-card{grid-column:1/-1}}
+@media(max-width:650px){.overview .welcome{grid-template-columns:1fr auto}}

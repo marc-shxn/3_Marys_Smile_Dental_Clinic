@@ -1,0 +1,717 @@
+.billing-page{gap:17px}
+.billing-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.billing-metric{min-width:0;padding:16px 17px;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 3px 12px #183d3407}
+.billing-metric-label{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--muted);font-size:10px}
+.billing-metric-icon{display:grid;place-items:center;flex:0 0 30px;height:30px;border-radius:10px;background:var(--primary-soft);color:var(--primary);font-size:14px;font-weight:700}
+.billing-metric-icon.amber{background:#fff5e8;color:#c77924}.billing-metric-icon.blue{background:#edf4ff;color:var(--blue)}.billing-metric-icon.purple{background:#f1edff;color:var(--purple)}
+.billing-metric>strong{display:block;margin-top:11px;color:var(--text);font:800 24px var(--font-heading);letter-spacing:-.6px}
+.billing-metric>small{display:block;margin-top:5px;color:var(--muted);font-size:9px}
+.billing-goal-track{height:5px;margin-top:11px;overflow:hidden;border-radius:10px;background:#e8f1ec}
+.billing-goal-track span{display:block;height:100%;border-radius:inherit;background:var(--primary-bright);transition:width .2s ease}
+.billing-goal-metric>strong{font-size:20px}
+.billing-invoices-panel{padding:0;overflow:hidden}
+.billing-table-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:17px 18px;border-bottom:1px solid var(--border)}
+.billing-section-title{display:flex;align-items:center;gap:7px}.billing-section-title h2{margin:0;font-size:14px;letter-spacing:-.2px}
+.billing-table-toolbar p{margin:5px 0 0;color:var(--muted);font-size:10px}
+.billing-filters{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}.billing-filters .search{width:min(280px,40vw)}.billing-filters .toolbar-select{min-width:132px}
+.billing-table th:first-child,.billing-table td:first-child{padding-left:19px}.billing-table th:last-child,.billing-table td:last-child{padding-right:19px}
+.billing-table td{height:55px}.billing-amount{color:var(--text);font-weight:700;white-space:nowrap}
+.billing-empty-state{margin:17px;min-height:300px}
+.billing-table-footer{padding:11px 18px;border-top:1px solid var(--border);background:#fcfefd;color:var(--muted);font-size:9px}
+.goal-backdrop{z-index:45;padding:18px}
+.goal-modal{display:flex;flex-direction:column;width:min(820px,100%);min-height:min(1044px,calc(100vh - 24px));max-height:calc(100vh - 24px);overflow:auto;border:1px solid var(--border);border-radius:20px;background:#fff;box-shadow:0 24px 90px #153b3033}
+.goal-modal-heading{display:flex;align-items:flex-start;gap:12px;padding:32px 32px 44px;border-bottom:1px solid var(--border)}
+.goal-title-icon{display:grid;place-items:center;flex:0 0 44px;height:44px;border-radius:14px;background:var(--primary-soft);color:var(--primary);font-size:20px}
+.goal-title-copy{flex:1;min-width:0}.goal-title-copy .eyebrow{margin:0 0 5px;color:var(--primary);font-size:8px;font-weight:800;letter-spacing:.65px}
+.goal-title-copy h2{margin:0;color:var(--text);font:500 21px var(--font-heading);letter-spacing:-.3px}
+.goal-title-copy>p:last-child{margin:7px 0 0;color:var(--muted);font-size:10px}
+.goal-modal-heading .close-button{flex:0 0 34px;width:34px;height:34px;margin-top:1px;border:0;background:var(--surface-soft);font-size:19px}
+.collection-goal-form{display:flex;flex:1;flex-direction:column;justify-content:space-between;padding:77px 32px 0}
+.collection-goal-fields{position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:18px;row-gap:36px}
+.goal-field{position:relative;display:flex;min-width:0;flex-direction:column;gap:7px;color:#153b30;font-size:9px;font-weight:700}
+.goal-field>small,.goal-end-date-field>small{color:var(--muted);font-size:8px;font-weight:400;line-height:1.4}
+.goal-field input,.goal-field textarea,.goal-period-select,.goal-date-input{width:100%;min-height:47px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text);font:400 10px var(--font-body)}
+.goal-field>input,.goal-money-input input{padding:0 12px;outline:0}
+.goal-field>input:focus,.goal-money-input:focus-within,.goal-date-input:focus-within,.goal-field textarea:focus{border-color:#61bd8b;box-shadow:0 0 0 2px #e8f7ef}
+.goal-money-input,.goal-date-input{display:flex;align-items:center;gap:5px;padding:0 10px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text)}
+.goal-money-input>span{font-size:10px;font-weight:600}.goal-money-input input{width:100%;min-width:0;min-height:0;height:44px;padding:0;border:0;border-radius:0;background:transparent;color:var(--text);font:400 10px var(--font-body)}
+.goal-field small{margin-top:-1px}
+.goal-period-field{z-index:5}
+.goal-period-select{display:flex;align-items:center;justify-content:space-between;padding:0 12px;text-align:left;cursor:pointer}
+.goal-period-select>span{color:var(--primary);font-size:16px;line-height:1}
+.goal-period-select.is-open{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}
+.goal-period-options{position:absolute;z-index:8;top:calc(100% + 3px);left:0;right:0;padding:4px;border:1px solid var(--border);border-radius:9px;background:#fff;box-shadow:0 10px 24px #183d3414}
+.goal-period-options button{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:31px;padding:0 9px;border:0;border-radius:7px;background:#fff;color:var(--muted);text-align:left;font:400 9px var(--font-body);cursor:pointer}
+.goal-period-options button:hover,.goal-period-options button.selected{background:var(--primary-soft);color:var(--primary);font-weight:700}
+.goal-date-field label,.goal-end-date-field label{margin-bottom:0}
+.goal-date-input{padding-right:9px}.goal-date-input input{width:100%;min-height:0;height:44px;padding:0;border:0;border-radius:0;outline:0;background:transparent;color:var(--text);font:400 10px var(--font-body)}
+.goal-end-date-field{grid-column:2}
+.goal-description-field{grid-column:1/-1}.goal-description-field textarea{min-height:95px;padding:11px 12px;resize:vertical}.goal-description-field textarea::placeholder{color:#9aaba2}
+.goal-notifications{display:flex;flex-direction:column;gap:9px;color:#153b30;font-size:9px}.goal-notification-control{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--muted);font-size:8px;font-weight:400}
+.goal-toggle{position:relative;width:42px;height:24px;flex:0 0 42px;padding:0;border:0;border-radius:20px;background:#cbd7d1;cursor:pointer;transition:background .18s}
+.goal-toggle i{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #1231;transition:transform .18s}.goal-toggle.on{background:var(--primary-bright)}.goal-toggle.on i{transform:translateX(18px)}
+.goal-status-field{display:flex;flex-direction:column;gap:8px;color:#153b30;font-size:9px}.goal-status-switch{display:grid;grid-template-columns:1fr 1fr;min-height:47px;padding:3px;border:1px solid var(--border);border-radius:10px;background:#f8fbf9}
+.goal-status-switch button{display:flex;align-items:center;justify-content:center;gap:5px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--muted);font:400 8px var(--font-body);cursor:pointer}
+.goal-status-switch button.selected{border-color:#bdebd0;background:var(--primary-soft);color:var(--primary);font-weight:700}
+.goal-preview-card{grid-column:1/-1;display:flex;min-height:160px;flex-direction:column;gap:10px;padding:18px 17px;border:1px solid #d4eee0;border-radius:13px;background:var(--primary-soft);color:var(--muted);font-size:8px}
+.goal-preview-card>b{display:flex;align-items:center;gap:7px;margin-bottom:2px;color:var(--text);font-size:10px}.goal-preview-card>b span{color:var(--primary);font-size:13px}.goal-preview-card>small{margin-top:-3px;margin-bottom:2px;font-size:8px}.goal-preview-card strong{color:var(--text);font-weight:500}
+.goal-modal-actions{display:flex;justify-content:flex-end;gap:9px;margin:32px -32px 0;padding:18px 32px 20px;border-top:1px solid var(--border)}
+@media(max-width:900px){.billing-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.billing-page>.page-title-row{align-items:flex-start;flex-direction:column}.billing-page>.page-title-row .page-toolbar{width:100%;display:grid;grid-template-columns:1fr 1fr}.billing-metrics{gap:9px}.billing-metric{padding:13px}.billing-metric>strong{font-size:20px}.billing-table-toolbar{align-items:flex-start;flex-direction:column}.billing-filters{width:100%;justify-content:stretch}.billing-filters .search{width:auto;flex:1}.billing-filters .toolbar-select{min-width:125px}}
+@media(max-width:650px){.goal-backdrop{padding:8px}.goal-modal{min-height:0;max-height:calc(100vh - 16px);border-radius:14px}.goal-modal-heading{padding:19px 17px 16px;gap:10px}.goal-title-icon{flex-basis:38px;height:38px}.goal-title-copy h2{font-size:17px}.goal-title-copy>p:last-child{font-size:9px}.collection-goal-form{padding:24px 17px 0}.collection-goal-fields{grid-template-columns:minmax(0,1fr);row-gap:15px}.goal-end-date-field,.goal-description-field,.goal-preview-card{grid-column:1}.goal-modal-actions{margin:24px -17px 0;padding:15px 17px 17px}.goal-field input,.goal-period-select,.goal-date-input{min-height:43px}.goal-money-input input,.goal-date-input input{height:40px}.goal-modal-actions{margin-top:18px}}
+
+/* Match the updated collection-goal reference and scale the whole dialog so
+   it stays compact and never needs an inner scrollbar. */
+.goal-backdrop{display:grid;place-items:center;padding:8px;overflow:hidden}
+.goal-modal{width:820px;min-height:1024px;height:1024px;max-height:none;overflow:hidden;transform:scale(.61);transform-origin:center center}
+.goal-modal-heading{padding:28px 32px 34px}
+.collection-goal-form{padding:36px 32px 0}
+.collection-goal-fields{row-gap:22px}
+.goal-field input,.goal-money-input,.goal-period-select,.goal-date-input{min-height:43px}
+.goal-money-input input,.goal-date-input input{height:40px}
+.goal-description-field textarea{min-height:95px;resize:none}
+.goal-notifications{gap:8px}
+.goal-notification-control{min-height:24px}
+.goal-preview-card{min-height:162px;padding:15px 17px;gap:8px}
+.goal-modal-actions{margin-top:24px}
+@media(max-height:800px){.goal-modal{transform:scale(.59)}}
+@media(max-height:680px){.goal-modal{transform:scale(.55)}}
+@media(max-width:650px){
+  .goal-modal{transform:scale(.59)}
+  .goal-modal-heading{padding:28px 32px 34px;gap:12px}
+  .goal-title-icon{flex-basis:44px;height:44px}
+  .goal-title-copy h2{font-size:21px}
+  .collection-goal-form{padding:36px 32px 0}
+  .collection-goal-fields{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:22px}
+  .goal-end-date-field{grid-column:2}
+  .goal-description-field,.goal-preview-card{grid-column:1/-1}
+  .goal-modal-actions{margin:24px -32px 0;padding:18px 32px 20px}
+}
+@media(max-width:480px){.goal-modal{transform:scale(.46)}}
+
+/* Fit the dialog to the website viewport at a readable size. */
+.goal-backdrop{padding:20px;overflow:hidden}
+.goal-modal{width:min(760px,calc(100vw - 40px));height:auto;min-height:0;max-height:calc(100dvh - 40px);overflow:hidden;transform:none;border-radius:18px}
+.goal-modal-heading{padding:24px 28px 22px}
+.collection-goal-form{flex:none;justify-content:flex-start;padding:22px 28px 0}
+.collection-goal-fields{row-gap:18px}
+.goal-field input,.goal-money-input,.goal-period-select,.goal-date-input{min-height:40px}
+.goal-money-input input,.goal-date-input input{height:38px}
+.goal-description-field textarea{min-height:72px}
+.goal-preview-card{min-height:142px;padding:16px 18px;gap:9px;font-size:11px;line-height:1.45}
+.goal-preview-card>b{gap:8px;margin-bottom:1px;font-size:14px}
+.goal-preview-card>b span{font-size:16px}
+.goal-preview-card>small{margin-top:-3px;margin-bottom:2px;font-size:10px;line-height:1.4}
+.goal-preview-card strong{font-weight:600}
+.goal-modal-actions{margin:22px -28px 0;padding:14px 28px 16px}
+@media(max-width:650px){
+  .goal-backdrop{padding:16px}
+  .goal-modal{width:760px;max-height:calc(100dvh - 32px);transform:scale(.80);border-radius:18px}
+  .goal-modal-heading{padding:24px 28px 22px;gap:12px}
+  .goal-title-icon{flex-basis:44px;height:44px}
+  .goal-title-copy h2{font-size:21px}
+  .collection-goal-form{padding:22px 28px 0}
+  .collection-goal-fields{grid-template-columns:minmax(0,1fr);row-gap:14px}
+  .goal-end-date-field,.goal-description-field,.goal-preview-card{grid-column:1}
+  .goal-modal-actions{margin:18px -28px 0;padding:14px 28px 16px}
+}
+@media(max-width:480px){.goal-modal{transform:scale(.55)}}
+@media(max-height:780px) and (min-width:651px){.goal-modal{transform:scale(.86)}}
+.goal-period-select{gap:12px}
+.goal-period-select>.goal-period-chevron{display:block;width:7px;height:7px;flex:0 0 7px;border:solid var(--primary);border-width:0 1.6px 1.6px 0;font-size:0;line-height:0;transform:rotate(135deg);transition:transform .18s ease}
+.goal-period-select.is-open>.goal-period-chevron{transform:rotate(45deg)}
+.goal-date-input{gap:8px}
+.goal-date-input input{flex:1;min-width:0;appearance:none}
+.goal-date-input input::-webkit-calendar-picker-indicator{display:none;opacity:0}
+.goal-date-picker{display:grid;place-items:center;width:26px;height:28px;flex:0 0 26px;padding:0;border:0;border-radius:5px;background:transparent;color:#607870;cursor:pointer}
+.goal-date-picker:hover{background:var(--primary-soft);color:var(--primary)}
+.goal-date-picker svg{display:block;width:22px;height:22px}
+
+/* Improve collection-goal form readability on desktop web view. */
+@media(min-width:651px){
+  .goal-backdrop{padding:12px;overflow:hidden}
+  .goal-modal{width:min(820px,calc(100vw - 64px));max-height:calc(100dvh - 24px);overflow:hidden;transform:none}
+  .goal-modal-heading{gap:14px;padding:24px 32px 21px}
+  .goal-title-icon{flex-basis:48px;height:48px;font-size:22px}
+  .goal-title-copy .eyebrow{font-size:9px;letter-spacing:.75px}
+  .goal-title-copy h2{font-size:24px}
+  .goal-title-copy>p:last-child{font-size:12px}
+  .collection-goal-form{padding:20px 32px 0}
+  .collection-goal-fields{column-gap:22px;row-gap:14px}
+  .goal-field{gap:8px;font-size:12px}
+  .goal-field>small,.goal-end-date-field>small{font-size:10px}
+  .goal-field input,.goal-field textarea,.goal-period-select,.goal-date-input{min-height:44px;font-size:13px}
+  .goal-money-input input,.goal-date-input input{height:42px;font-size:13px}
+  .goal-money-input>span{font-size:13px}
+  .goal-period-select{padding:0 14px}
+  .goal-period-select>.goal-period-chevron{width:9px;height:9px;flex-basis:9px;border-width:0 1.8px 1.8px 0}
+  .goal-description-field textarea{min-height:76px;padding:12px 14px}
+  .goal-notifications{gap:7px;font-size:12px}
+  .goal-notification-control{min-height:26px;gap:14px;font-size:11px}
+  .goal-toggle{width:46px;height:26px;flex-basis:46px}
+  .goal-toggle i{width:20px;height:20px}
+  .goal-toggle.on i{transform:translateX(20px)}
+  .goal-preview-card{min-height:0;padding:14px 18px;gap:7px;font-size:12px}
+  .goal-preview-card>b{font-size:15px}
+  .goal-preview-card>b span{font-size:17px}
+  .goal-preview-card>small{font-size:11px}
+  .goal-modal-actions{margin:15px -32px 0;padding:12px 32px 14px}
+  .goal-modal-actions .primary-button,.goal-modal-actions .secondary-button{min-height:44px;padding:0 18px;border-radius:10px;font-size:12px}
+}
+@media(max-height:900px) and (min-width:651px){.goal-modal{overflow-y:auto}}
+
+/* Billing page layout based on the latest desktop reference. */
+.billing-page{gap:20px}
+.billing-page>.page-title-row{align-items:center}
+.billing-page>.page-title-row h1{font-size:30px;letter-spacing:-.7px}
+.billing-page>.page-title-row p{font-size:14px;margin-top:5px}
+.billing-page>.page-title-row .page-toolbar{gap:10px}
+.billing-page .billing-create-invoice,.billing-page .billing-manage-goal{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 17px;border-radius:12px;font-weight:700}
+.billing-page .billing-create-invoice,.billing-page .billing-create-invoice:hover{color:#fff}
+.billing-create-invoice>span{font-size:22px;line-height:1}
+.billing-manage-goal>span{font-size:19px;line-height:1;font-weight:800}
+.billing-metrics{gap:14px}
+.billing-metric{min-height:116px;padding:18px 19px;border-radius:16px;box-shadow:none}
+.billing-metric-label{font-size:12px}
+.billing-metric-icon{flex-basis:34px;height:34px;border-radius:11px}
+.billing-metric-icon svg{width:21px;height:21px}
+.billing-collection-icon{font-size:19px;font-weight:800}
+.billing-metric>strong{margin-top:12px;font-size:30px;letter-spacing:-.6px;font-weight:600}
+.billing-metric>small{margin-top:8px;font-size:11px}
+.billing-search-row{display:grid;grid-template-columns:minmax(180px,1fr) 104px 112px 44px;gap:10px;align-items:center}
+.billing-search{display:flex;align-items:center;gap:10px;min-width:0;height:44px;padding:0 13px;border:1px solid var(--border);border-radius:11px;background:#fff;color:#8ca29a}
+.billing-search svg{width:19px;height:19px;flex:0 0 19px}
+.billing-search input{width:100%;min-width:0;height:100%;padding:0;border:0;outline:0;background:transparent;color:var(--text);font:400 12px var(--font-body)}
+.billing-search input::placeholder{color:#91a59d}
+.billing-search-row>.toolbar-select{width:100%;min-width:0;height:44px;padding:0 12px;border-radius:11px;background-color:#fff;font-size:11px}
+.billing-filter-reset{display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid var(--border);border-radius:11px;background:#fff;color:#607870;cursor:pointer;transition:background .16s,color .16s}
+.billing-filter-reset:hover{background:var(--primary-soft);color:var(--primary)}
+.billing-filter-reset svg{width:21px;height:21px}
+.billing-recent-panel{padding:0 19px 10px;border-radius:16px}
+.billing-recent-panel .billing-table-toolbar{padding:18px 0 4px;border:0}
+.billing-section-title{gap:10px}
+.billing-recent-panel .billing-section-title h2{font-size:18px;font-weight:500;letter-spacing:-.3px}
+.billing-section-title .count-pill{padding:5px 9px;border-radius:20px;background:#f4f8f6;color:#83968e;font-size:10px}
+.billing-view-all{padding:7px 0;border:0;background:none;color:var(--primary);font:700 12px var(--font-body);cursor:pointer}
+.billing-recent-scroll{width:100%;overflow-x:auto}
+.billing-recent-table{width:100%;min-width:930px;border-collapse:separate;border-spacing:0 7px;table-layout:fixed}
+.billing-recent-table th{height:35px;padding:0 13px;color:#83968e;text-align:left;font-size:10px;font-weight:500;white-space:nowrap}
+.billing-recent-table th:nth-child(1){width:15%}.billing-recent-table th:nth-child(2){width:10%}.billing-recent-table th:nth-child(3){width:26%}.billing-recent-table th:nth-child(4){width:10%}.billing-recent-table th:nth-child(5){width:13%}.billing-recent-table th:nth-child(6){width:26%}
+.billing-recent-table td{height:58px;padding:10px 13px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:#fff;color:var(--text);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.billing-recent-table td:first-child{border-left:1px solid var(--border);border-radius:12px 0 0 12px}
+.billing-recent-table td:last-child{border-right:1px solid var(--border);border-radius:0 12px 12px 0}
+.billing-recent-table td:first-child b{display:block;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:600}
+.billing-recent-table td:first-child small{display:block;margin-top:4px;color:#91a59d;font-size:10px}
+.billing-recent-table .billing-amount{font-size:12px;font-weight:700}
+.billing-status{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:6px 9px;border-radius:20px;font-size:10px;line-height:1;white-space:nowrap}
+.billing-status i{width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:currentColor}
+.billing-status.is-paid{background:#e9f8f0;color:#16845f}
+.billing-status.is-unpaid{background:#fff3e3;color:#be741b}
+.billing-row-actions{display:flex;align-items:center;gap:7px;overflow:visible!important}
+.billing-view-invoice,.billing-receipt-action,.billing-record-payment{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 12px;border:1px solid var(--border);border-radius:10px;background:#fff;color:#5b746b;font:600 11px var(--font-body);cursor:pointer;white-space:nowrap}
+.billing-view-invoice:hover,.billing-receipt-action:hover{background:#f6faf8;border-color:#bfded0;color:var(--primary)}
+.billing-receipt-action{border-color:transparent;background:#e9f8f0;color:#16845f}
+.billing-record-payment{border-color:var(--primary-bright);background:var(--primary-bright);color:#fff}
+.billing-record-payment:hover{filter:brightness(.97)}
+.billing-recent-panel .billing-empty-state{margin:10px 0 8px;min-height:250px}
+.billing-recent-panel.is-empty{min-height:366px;padding-bottom:12px}
+.billing-recent-panel.is-empty .billing-table-toolbar{padding-bottom:0}
+.billing-invoices-empty-state{display:flex;min-height:308px;flex-direction:column;align-items:center;justify-content:center;padding:8px 20px 18px;text-align:center}
+.billing-empty-illustration{display:block;width:174px;height:146px;flex:0 0 auto}
+.billing-invoices-empty-state h3{margin:7px 0 0;color:var(--text);font:500 20px var(--font-heading);letter-spacing:-.25px}
+.billing-invoices-empty-state>p{max-width:470px;margin:8px 0 0;color:var(--muted);font-size:12px;line-height:1.5}
+.billing-empty-actions{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:16px}
+.billing-empty-actions .billing-create-invoice,.billing-empty-actions .billing-manage-goal{min-height:38px;padding:0 14px;border-radius:10px;font-size:11px}
+.billing-empty-actions .billing-create-invoice>span{font-size:19px}
+.billing-empty-actions .billing-manage-goal>span{font-size:17px}
+.invoice-detail-backdrop{z-index:55;padding:16px}
+.invoice-detail-modal{width:min(480px,100%);padding:22px;border:1px solid var(--border);border-radius:18px;background:#fff;box-shadow:0 24px 90px #153b3033}
+.invoice-detail-modal>header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding-bottom:17px;border-bottom:1px solid var(--border)}
+.invoice-detail-modal .eyebrow{margin:0 0 5px;color:var(--primary);font-size:9px;font-weight:800;letter-spacing:.7px}
+.invoice-detail-modal h2{margin:0;color:var(--text);font:600 22px var(--font-heading)}
+.invoice-detail-modal header span{display:block;margin-top:5px;color:var(--muted);font-size:11px}
+.invoice-detail-modal dl{display:grid;gap:0;margin:10px 0 0}
+.invoice-detail-modal dl>div{display:flex;justify-content:space-between;gap:18px;padding:12px 0;border-bottom:1px solid #edf3ef;font-size:12px}
+.invoice-detail-modal dt{color:var(--muted)}.invoice-detail-modal dd{margin:0;color:var(--text);font-weight:600;text-align:right}
+.invoice-detail-modal>footer{display:flex;justify-content:flex-end;padding-top:17px}
+
+/* Reception-friendly invoice creation form. */
+.invoice-create-backdrop{z-index:50}
+.invoice-create-modal{display:flex;flex-direction:column;width:min(760px,100%);max-height:min(90vh,860px);overflow:hidden}
+.invoice-create-modal>.modal-heading{flex:none;padding:20px 23px 16px}
+.invoice-create-modal>.modal-heading h2{font-size:19px}
+.invoice-create-modal>form{min-height:0;overflow-y:auto;padding:16px 23px 20px}
+.invoice-form-section{position:relative;margin:0;padding:0 0 15px;border-bottom:1px solid #edf3ef}
+.invoice-form-section+.invoice-form-section{margin-top:14px}
+.invoice-form-section h3{margin:0 0 9px;color:var(--text);font-size:12px;font-weight:700}
+.invoice-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:end;gap:11px 13px}
+.invoice-detail-fields,.invoice-billing-fields{grid-template-columns:repeat(3,minmax(0,1fr))}
+.invoice-payment-fields.is-partial-payment{grid-template-columns:repeat(4,minmax(0,1fr))}
+.invoice-form-section .field{min-width:0;gap:6px;color:#526c60;font-size:10px}
+.invoice-form-section .field input,.invoice-form-section .field select,.invoice-form-section .field textarea{width:100%;min-height:38px;padding:9px 10px;border:1px solid var(--border);border-radius:9px;background:#fff;color:var(--text);font:400 11px var(--font-body)}
+.invoice-form-section .field input:focus,.invoice-form-section .field select:focus,.invoice-form-section .field textarea:focus{outline:0;border-color:#61bd8b;box-shadow:0 0 0 2px #e8f7ef}
+.invoice-form-section .field input[readonly]{background:#f7fbf9;color:#657c72}
+.invoice-form-section .field textarea{min-height:72px;resize:vertical}
+.invoice-patient-picker{position:relative;max-width:520px}
+.invoice-patient-options{position:absolute;z-index:35;top:calc(100% + 4px);left:0;right:0;max-height:190px;overflow:auto;padding:4px;border:1px solid var(--border);border-radius:10px;background:#fff;box-shadow:0 12px 30px #183d3420}
+.invoice-patient-options button{display:flex;align-items:center;justify-content:space-between;width:100%;gap:12px;padding:9px 10px;border:0;border-radius:7px;background:#fff;color:var(--text);text-align:left}
+.invoice-patient-options button:hover,.invoice-patient-options button:focus-visible{background:var(--primary-soft)}
+.invoice-patient-options button>span{display:flex;min-width:0;flex-direction:column;gap:2px}
+.invoice-patient-options button b{font-size:11px}.invoice-patient-options button small,.invoice-patient-options>p{color:var(--muted);font-size:9px}
+.invoice-patient-options>p{margin:0;padding:10px}
+.invoice-selected-patient{display:flex;align-items:center;gap:10px;max-width:520px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#f9fcfa}
+.invoice-patient-avatar{display:grid;place-items:center;width:34px;height:34px;flex:0 0 34px;border-radius:50%;background:var(--primary-soft);color:var(--primary);font-weight:700}
+.invoice-selected-patient>span:nth-child(2){display:flex;min-width:0;flex:1;flex-direction:column;gap:2px;color:var(--text);font-size:11px}
+.invoice-selected-patient small{color:var(--muted);font-size:9px}
+.invoice-change-patient{padding:6px 9px;border:1px solid var(--border);border-radius:7px;background:#fff;color:var(--primary);font-size:10px;font-weight:700}
+.invoice-no-patients,.invoice-payment-note{display:block;margin-top:6px;color:var(--muted);font-size:9px;font-weight:400}
+.invoice-total{display:flex;min-height:57px;flex-direction:column;justify-content:center;gap:3px;padding:8px 11px;border:1px solid #d4eee0;border-radius:9px;background:var(--primary-soft);color:var(--muted);font-size:9px}
+.invoice-total strong{color:var(--text);font-size:15px;font-weight:700}
+.invoice-balance{background:#f7fbf9}
+.invoice-optional{color:#91a59d;font-size:9px;font-weight:400}
+.invoice-notes-section{border-bottom:0;padding-bottom:0}
+.invoice-notes-section .field{display:block}
+.invoice-create-modal .form-error{margin:12px 0 0}
+.invoice-create-modal .form-actions{padding-top:15px}
+.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:650px){
+  .invoice-create-backdrop{padding:10px}
+  .invoice-create-modal{max-height:calc(100dvh - 20px);border-radius:14px}
+  .invoice-create-modal>.modal-heading{padding:17px 16px 13px}
+  .invoice-create-modal>form{padding:14px 16px 17px}
+  .invoice-form-grid,.invoice-detail-fields,.invoice-billing-fields,.invoice-payment-fields.is-partial-payment{grid-template-columns:minmax(0,1fr);gap:10px}
+}
+@media(max-width:1000px){.billing-search-row{grid-template-columns:minmax(0,1fr) 120px 130px 44px}.billing-recent-table{min-width:930px}}
+@media(max-width:700px){.billing-page>.page-title-row{align-items:flex-start;flex-direction:column}.billing-page>.page-title-row .page-toolbar{width:100%;justify-content:flex-start}.billing-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.billing-search-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px}.billing-search{grid-column:1/-1}.billing-search-row>.toolbar-select{grid-row:2}.billing-search-row>.billing-date-filter{grid-column:2}.billing-search-row>.toolbar-select:not(.billing-date-filter){grid-column:1}.billing-filter-reset{grid-column:3;grid-row:2}.billing-recent-panel{padding:0 12px 8px}}
+@media(max-width:440px){.billing-page>.page-title-row .page-toolbar{display:grid;grid-template-columns:1fr 1fr}.billing-page .billing-create-invoice,.billing-page .billing-manage-goal{padding:0 10px}.billing-metric{padding:14px}.billing-metric>strong{font-size:24px}}
+
+/* Compact Billing search and filter row to match the desktop reference. */
+.billing-search-row{grid-template-columns:minmax(0,1fr) 100px 120px 36px;gap:8px}
+.billing-search{height:36px;gap:8px;padding:0 9px;border-radius:8px}
+.billing-search svg{width:17px;height:17px;flex-basis:17px}
+.billing-search input{font-size:11px}
+.billing-search-row>.toolbar-select{height:36px;padding:0 9px;border-radius:8px;font-size:10px}
+.billing-filter-reset{width:36px;height:36px;border-radius:8px}
+.billing-filter-reset svg{width:18px;height:18px}
+@media(max-width:700px){.billing-search-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 36px}}
+
+.billing-controls{position:relative;z-index:5;display:grid;gap:10px}
+.billing-filter-reset.is-open{border-color:#aadcc1;background:var(--primary-soft);color:var(--primary)}
+.billing-filter-reset.has-active-filters{position:relative}
+.billing-filter-reset.has-active-filters::after{position:absolute;top:5px;right:5px;width:6px;height:6px;border:1px solid #fff;border-radius:50%;background:var(--primary-bright);content:""}
+.billing-custom-range{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:#fff}
+.billing-custom-range label,.billing-advanced-field{display:grid;gap:6px;color:var(--text);font-size:10px;font-weight:700}
+.billing-custom-range input,.billing-advanced-field input,.billing-advanced-field select{width:100%;min-width:0;height:36px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font:400 11px var(--font-body)}
+.billing-custom-range input{min-width:155px}
+.billing-custom-range>span{padding-bottom:10px;color:var(--muted);font-size:10px}
+.billing-advanced-panel{position:absolute;z-index:30;top:calc(100% + 8px);right:0;width:min(620px,100%);padding:18px;border:1px solid var(--border);border-radius:14px;background:#fff;box-shadow:0 18px 48px #183d3422}
+.billing-advanced-panel>header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+.billing-advanced-panel>header h3{margin:0;color:var(--text);font:600 16px var(--font-heading)}
+.billing-advanced-panel>header p{margin:5px 0 0;color:var(--muted);font-size:10px}
+.billing-filter-close{display:grid;place-items:center;width:30px;height:30px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--muted);font-size:18px;line-height:1;cursor:pointer}
+.billing-filter-close:hover{background:var(--primary-soft);color:var(--primary)}
+.billing-advanced-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px 14px}
+.billing-advanced-field input:focus,.billing-advanced-field select:focus,.billing-custom-range input:focus{outline:0;border-color:#61bd8b;box-shadow:0 0 0 2px #e8f7ef}
+.billing-advanced-panel>footer{display:flex;justify-content:flex-end;gap:9px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+.billing-advanced-panel>footer button{min-height:36px;padding:0 13px;border-radius:9px;font-size:11px}
+.billing-status.is-partial{background:#edf4ff;color:#3479d8}
+@media(max-width:700px){.billing-advanced-panel{width:100%;padding:15px}.billing-advanced-grid{grid-template-columns:minmax(0,1fr)}.billing-custom-range{align-items:stretch}.billing-custom-range label{flex:1 1 140px}.billing-custom-range input{min-width:0}.billing-custom-range>span{width:100%;padding:0}}
+
+.billing-collection-goal{display:flex;flex-direction:column;gap:9px;padding:14px;border:1px solid #d1ecd9;border-radius:12px;background:#eaf9f1;color:#173d34}
+.billing-goal-heading,.billing-goal-totals{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.billing-goal-heading h2{margin:0;color:#173d34;font:600 14px var(--font-heading);letter-spacing:-.1px}
+.billing-goal-heading p{margin:3px 0 0;color:#71877e;font-size:10px}
+.billing-goal-percent{display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:22px;padding:0 8px;border-radius:20px;background:#62dc91;color:#123b30;font-size:9px;font-weight:800}
+.billing-goal-totals>div{display:flex;flex-direction:column;gap:2px}
+.billing-goal-totals small{color:#71877e;font-size:9px}
+.billing-goal-totals strong{color:#173d34;font-size:18px;font-weight:700;letter-spacing:-.2px}
+.billing-goal-target{text-align:right}
+.billing-goal-track{height:7px;overflow:hidden;border-radius:10px;background:#d7f2e3}
+.billing-goal-track>span{display:block;height:100%;border-radius:inherit;background:#62dc91;transition:width .25s ease}
+@media(max-width:700px){.billing-collection-goal{padding:13px}.billing-goal-totals strong{font-size:16px}}
+
+/* Collection goal summary becomes a button leading to its own management view. */
+.billing-collection-goal{width:100%;font:inherit;text-align:left;cursor:pointer;transition:transform .16s ease,box-shadow .16s ease}
+.billing-collection-goal:hover{transform:translateY(-1px);box-shadow:0 8px 20px #143b3224}
+.billing-collection-goal:focus-visible{outline:3px solid #68dfa0;outline-offset:3px}
+.billing-goal-details-page{gap:16px;padding-top:20px}
+.goal-details-back{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;padding:0;border:0;background:transparent;color:var(--primary);font:500 11px var(--font-body);cursor:pointer}
+.goal-details-back:hover{text-decoration:underline}
+.goal-details-back span{font-size:17px;line-height:1}
+.goal-details-title-row{margin-top:-4px}
+.goal-details-title-row h1{font-size:21px!important;font-weight:500!important;letter-spacing:-.3px!important}
+.goal-details-title-row p{margin-top:4px!important;font-size:10px!important}
+.goal-details-edit{min-height:34px;padding:0 12px;border-radius:9px;font-size:10px}
+.goal-details-edit span{margin-right:4px;font-size:13px}
+.goal-details-progress{display:flex;flex-direction:column;gap:9px;padding:14px;border:1px solid #d1ecd9;border-radius:12px;background:#eaf9f1;color:#173d34}
+.goal-details-progress-heading,.goal-details-progress-values,.goal-details-progress-meta{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.goal-details-progress-heading h2{margin:0;color:#173d34;font:600 13px var(--font-heading)}
+.goal-details-progress-heading p{display:flex;align-items:center;gap:5px;margin:4px 0 0;color:#71877e;font-size:9px}
+.goal-details-progress-heading p span{font-size:11px}
+.goal-details-status{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:20px;background:#eef9f2;color:#16845f;font-size:8px;font-weight:700;white-space:nowrap}
+.goal-details-status i{width:5px;height:5px;border-radius:50%;background:#16845f}
+.goal-details-status.is-archived{background:#f1f4f2;color:#687970}
+.goal-details-status.is-archived i{background:#84938b}
+.goal-details-progress-values>div{display:flex;flex-direction:column;gap:2px}
+.goal-details-progress-values small{color:#71877e;font-size:8px}
+.goal-details-progress-values strong{color:#173d34;font-size:19px;font-weight:700;letter-spacing:-.2px}
+.goal-details-target{text-align:right}
+.goal-details-progress-meta{color:#13825f;font-size:8px}
+.goal-details-progress-meta span:last-child{color:#71877e;text-align:right}
+.goal-details-progress-track{height:6px;overflow:hidden;border-radius:8px;background:#d7f2e3}
+.goal-details-progress-track span{display:block;height:100%;border-radius:inherit;background:#62dc91;transition:width .25s ease}
+.goal-details-info-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(230px,1fr);gap:14px}
+.goal-details-card{min-width:0;padding:13px;border-radius:12px;box-shadow:none}
+.goal-details-card h2,.goal-details-manage>h2{margin:0;color:var(--text);font:500 13px var(--font-heading)}
+.goal-details-description>h2{margin-bottom:10px}
+.goal-details-description>b{display:block;color:var(--text);font-size:8px}
+.goal-details-description>p{margin:5px 0 0;padding-bottom:10px;border-bottom:1px solid var(--border);color:var(--muted);font-size:9px;line-height:1.5}
+.goal-details-dates{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.goal-details-dates>div{display:flex;flex-direction:column;gap:4px}
+.goal-details-dates small{color:var(--muted);font-size:8px}
+.goal-details-dates strong{color:var(--text);font-size:9px;font-weight:500}
+.goal-details-dates strong span{color:#71877e}
+.goal-details-notifications>header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.goal-details-notifications>header>span{color:var(--primary);font-size:14px}
+.goal-details-notifications>p{margin:6px 0 9px;color:var(--muted);font-size:8px}
+.goal-details-notifications ul{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.goal-details-notifications li{display:flex;align-items:flex-start;gap:7px}
+.goal-details-check{display:grid;place-items:center;width:16px;height:16px;flex:0 0 16px;border-radius:50%;background:var(--primary-soft);color:var(--primary);font-size:10px;font-weight:700}
+.goal-details-notifications li.is-disabled .goal-details-check{background:#f0f3f1;color:#87958e}
+.goal-details-notifications li>span:last-child{display:flex;flex-direction:column;gap:2px}
+.goal-details-notifications li b{color:var(--text);font-size:8px;font-weight:600}
+.goal-details-notifications li small{color:var(--muted);font-size:7px;line-height:1.35}
+.goal-details-manage{display:flex;flex-direction:column;gap:8px}
+.goal-details-manage>h2{font-size:13px}
+.goal-details-manage-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.goal-details-action-card{padding:12px;border-radius:12px;box-shadow:none}
+.goal-details-action-card h3{display:flex;align-items:center;gap:6px;margin:0;color:var(--text);font-size:9px;font-weight:700}
+.goal-details-action-card h3 span{color:#5d7770;font-size:11px}
+.goal-details-action-card p{min-height:25px;margin:7px 0 8px;color:var(--muted);font-size:8px;line-height:1.45}
+.goal-details-action-card button{min-height:29px;padding:0 9px;border-radius:8px;font-size:8px}
+.goal-details-action-card button span{margin-right:3px}
+.goal-details-action-card.is-danger{border-color:#f1d8d5}
+.goal-details-action-card.is-danger h3,.goal-details-action-card.is-danger h3 span{color:#d52b2b}
+.goal-details-action-card.is-danger button{border-color:#f1d8d5;background:#fff4f3;color:#ce3030}
+.goal-details-action-card.is-danger button:hover{background:#ffe8e6}
+.goal-delete-backdrop{z-index:60;padding:16px}
+.goal-delete-dialog{width:min(390px,100%);padding:22px;border:1px solid var(--border);border-radius:16px;background:#fff;box-shadow:0 20px 60px #153b3033}
+.goal-delete-dialog h2{margin:0;color:var(--text);font:600 17px var(--font-heading)}
+.goal-delete-dialog p{margin:8px 0 20px;color:var(--muted);font-size:11px;line-height:1.5}
+.goal-delete-dialog footer{display:flex;justify-content:flex-end;gap:8px}
+.goal-delete-dialog footer button{min-height:35px;padding:0 12px;border-radius:9px;font-size:10px}
+.goal-delete-confirm{border:1px solid #d9443d;border-radius:9px;background:#d9443d;color:#fff;font:600 10px var(--font-body);cursor:pointer}
+@media(max-width:700px){.goal-details-info-grid{grid-template-columns:minmax(0,1fr)}.goal-details-notifications{min-height:auto}}
+@media(max-width:520px){.goal-details-manage-grid{grid-template-columns:minmax(0,1fr)}.goal-details-title-row{align-items:flex-start;gap:10px}.goal-details-title-row .goal-details-edit{flex:0 0 auto}.goal-details-progress{padding:12px}.goal-details-progress-values strong{font-size:16px}.goal-details-progress-meta{align-items:flex-start;flex-direction:column;gap:3px}.goal-details-progress-meta span:last-child{text-align:left}.goal-details-dates{gap:8px}}
+
+/* Match the larger desktop composition in the goal-details reference. */
+.billing-goal-details-page{gap:17px;padding-top:49px}
+.goal-details-back{font-size:11px}
+.goal-details-title-row{margin-top:-5px}
+.goal-details-title-row h1{font-size:22px!important}
+.goal-details-title-row p{font-size:11px!important}
+.goal-details-edit{min-height:40px;padding:0 15px;border-radius:10px;font-size:10px}
+.goal-details-progress{gap:10px;padding:15px;border-radius:13px}
+.goal-details-progress-heading h2{font-size:14px}
+.goal-details-progress-heading p{font-size:10px}
+.goal-details-status{padding:6px 10px;font-size:9px}
+.goal-details-progress-values small{font-size:9px}
+.goal-details-progress-values strong{font-size:21px}
+.goal-details-progress-meta{font-size:9px}
+.goal-details-progress-track{height:7px}
+.goal-details-info-grid{gap:15px}
+.goal-details-card{padding:16px;border-radius:13px}
+.goal-details-card h2,.goal-details-manage>h2{font-size:15px}
+.goal-details-description>h2{margin-bottom:12px}
+.goal-details-description>b{font-size:9px}
+.goal-details-description>p{font-size:10px;line-height:1.55;padding-bottom:12px}
+.goal-details-dates{margin-top:12px}
+.goal-details-dates small{font-size:9px}
+.goal-details-dates strong{font-size:10px}
+.goal-details-notifications>p{font-size:9px;margin:7px 0 11px}
+.goal-details-notifications ul{gap:10px}
+.goal-details-check{width:18px;height:18px;flex-basis:18px}
+.goal-details-notifications li b{font-size:9px}
+.goal-details-notifications li small{font-size:8px}
+.goal-details-manage{gap:9px}
+.goal-details-manage-grid{gap:12px}
+.goal-details-action-card{padding:15px;border-radius:13px}
+.goal-details-action-card h3{font-size:10px}
+.goal-details-action-card p{min-height:30px;margin:8px 0 10px;font-size:9px}
+.goal-details-action-card button{min-height:32px;padding:0 11px;font-size:9px}
+.goal-delete-dialog{width:min(468px,100%);padding:24px;border-radius:22px}
+.goal-delete-icon{display:grid;place-items:center;width:44px;height:44px;margin-bottom:17px;border-radius:15px;background:#fff0ef;color:#d83b38}
+.goal-delete-icon svg{width:22px;height:22px}
+.goal-delete-dialog h2{font-size:20px;letter-spacing:-.3px}
+.goal-delete-dialog p{margin:10px 0 17px;font-size:12px;line-height:1.55}
+.goal-delete-summary{display:flex;flex-direction:column;gap:4px;padding:12px 13px;border-radius:12px;background:#f5f9f7;color:var(--text)}
+.goal-delete-summary b{font-size:11px;font-weight:700}
+.goal-delete-summary span{color:var(--muted);font-size:10px}
+.goal-delete-dialog footer{gap:9px;margin-top:20px}
+.goal-delete-dialog footer button{min-height:40px;padding:0 14px;border-radius:10px;font-size:11px}
+.goal-delete-confirm{display:inline-flex;align-items:center;gap:7px;background:#d8403d;color:#fff}
+.goal-delete-confirm:hover{background:#c83230}
+.goal-delete-confirm svg{width:15px;height:15px}
+@media(max-width:700px){.billing-goal-details-page{padding-top:26px}.goal-details-progress{padding:13px}.goal-details-card{padding:14px}}
+@media(max-width:520px){.goal-delete-dialog{padding:20px;border-radius:18px}.goal-delete-icon{width:40px;height:40px;margin-bottom:14px}.goal-delete-dialog h2{font-size:18px}.goal-delete-dialog p{font-size:11px}.goal-delete-summary{padding:11px}.goal-delete-dialog footer{margin-top:16px}}
+
+/* Status-aware invoice details, payment collection, and receipts. */
+.invoice-detail-backdrop{overflow-y:auto}
+.invoice-detail-modal{width:min(620px,100%);max-height:calc(100dvh - 32px);overflow-y:auto;padding:22px;border-radius:16px}
+.invoice-detail-modal>header{align-items:center;padding-bottom:15px}
+.invoice-detail-modal h2{font-size:20px}
+.invoice-detail-modal .close-button{flex:0 0 auto}
+.invoice-detail-modal>footer{gap:9px;padding-top:16px}
+.invoice-feedback{margin:14px 0 0;padding:10px 12px;border:1px solid;border-radius:9px;font-size:11px;line-height:1.45}
+.invoice-feedback.is-success{border-color:#ccebd9;background:#effaf3;color:#16845f}
+.invoice-feedback.is-error,.invoice-validation-summary{border-color:#f1d3d0;background:#fff5f4;color:#c93630}
+.invoice-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:0 20px!important;margin-top:7px!important}
+.invoice-detail-grid>div{min-width:0;align-items:flex-start;padding:10px 0!important;font-size:11px!important}
+.invoice-detail-grid dt{flex:0 0 42%;font-size:10px}
+.invoice-detail-grid dd{min-width:0;overflow-wrap:anywhere;font-size:11px}
+.invoice-payment-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:14px;padding:12px;border:1px solid #d4eee0;border-radius:11px;background:#f2faf5}
+.invoice-payment-summary>div{display:flex;min-width:0;flex-direction:column;gap:5px}
+.invoice-payment-summary span{color:var(--muted);font-size:9px}
+.invoice-payment-summary b{color:var(--text);font-size:13px}
+.invoice-payment-history{margin-top:17px}
+.invoice-payment-history h3{margin:0 0 8px;color:var(--text);font:600 12px var(--font-heading)}
+.invoice-history-list{display:grid;gap:7px}
+.invoice-history-list article{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 11px;border:1px solid var(--border);border-radius:9px;background:#fff}
+.invoice-history-list article>div{display:flex;min-width:0;flex-direction:column;gap:3px}
+.invoice-history-list b{color:var(--text);font-size:10px}
+.invoice-history-list small{color:var(--muted);font-size:9px}
+.invoice-history-list strong{color:var(--text);font-size:11px;white-space:nowrap}
+.invoice-payment-form{display:grid;gap:12px;padding-top:16px}
+.invoice-payment-form .field{display:flex;min-width:0;flex-direction:column;gap:6px;color:#526c60;font-size:10px;font-weight:600}
+.invoice-payment-form .field input,.invoice-payment-form .field select{width:100%;min-height:40px;padding:9px 11px;border:1px solid var(--border);border-radius:9px;background:#fff;color:var(--text);font:400 11px var(--font-body)}
+.invoice-payment-form .field input:focus,.invoice-payment-form .field select:focus{outline:0;border-color:#61bd8b;box-shadow:0 0 0 2px #e8f7ef}
+.invoice-payment-form .field input[readonly]{background:#f6faf8;color:#657c72}
+.invoice-payment-form .field.has-error input,.invoice-payment-form .field.has-error select{border-color:#d94a42;background:#fff9f8}
+.invoice-payment-form .field.has-error input:focus,.invoice-payment-form .field.has-error select:focus{box-shadow:0 0 0 2px #fae1df}
+.invoice-field-error{color:#c93630;font-size:9px;font-weight:500;line-height:1.4}
+.invoice-validation-summary{margin:0;padding:9px 11px;border:1px solid;border-radius:8px;font-size:10px}
+.invoice-payment-form>footer{display:flex;justify-content:flex-end;gap:9px;padding-top:6px}
+.invoice-detail-modal button:disabled{opacity:.65;cursor:wait}
+.invoice-receipt-sheet{margin-top:17px;padding:18px;border:1px solid var(--border);border-radius:12px;background:#fff}
+.invoice-receipt-clinic{display:flex;flex-direction:column;gap:4px;padding-bottom:13px;border-bottom:1px solid var(--border)}
+.invoice-receipt-clinic b{color:var(--text);font:600 15px var(--font-heading)}
+.invoice-receipt-clinic span{color:var(--muted);font-size:10px}
+.invoice-receipt-number{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:13px;padding:11px;border-radius:9px;background:#f3faf6}
+.invoice-receipt-number span{color:var(--muted);font-size:10px}
+.invoice-receipt-number strong{color:var(--primary);font-size:12px}
+.invoice-receipt-sheet dl{margin-top:7px}
+.invoice-receipt-sheet dl>div{padding:10px 0;font-size:11px}
+.invoice-receipt-sheet dt{font-size:10px}
+.invoice-receipt-sheet dd{font-size:11px}
+.invoice-receipt-actions .primary-button,.invoice-receipt-actions .secondary-button{min-height:37px;padding:0 13px;border-radius:9px;font-size:10px}
+@media(max-width:560px){.invoice-detail-backdrop{padding:10px}.invoice-detail-modal{max-height:calc(100dvh - 20px);padding:17px}.invoice-detail-grid{grid-template-columns:minmax(0,1fr)!important}.invoice-detail-grid>div{padding:8px 0!important}.invoice-detail-grid dt{flex-basis:40%}.invoice-payment-summary{gap:6px;padding:10px}.invoice-payment-summary b{font-size:11px}.invoice-receipt-sheet{padding:13px}.invoice-detail-modal>footer,.invoice-receipt-actions{flex-wrap:wrap}.invoice-detail-modal>footer button,.invoice-receipt-actions button{flex:1 1 auto}}
+@media print{
+  @page{size:auto;margin:16mm}
+  body *{visibility:hidden!important}
+  .invoice-detail-backdrop{position:static!important;display:block!important;overflow:visible!important;padding:0!important;background:transparent!important}
+  .invoice-detail-modal.is-receipt{position:absolute!important;inset:0 auto auto 0!important;width:100%!important;max-width:none!important;max-height:none!important;overflow:visible!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#fff!important}
+  .invoice-detail-modal.is-receipt>*{visibility:hidden!important}
+  .invoice-detail-modal.is-receipt .invoice-receipt-sheet,.invoice-detail-modal.is-receipt .invoice-receipt-sheet *{visibility:visible!important}
+  .invoice-detail-modal.is-receipt .invoice-receipt-sheet{position:relative!important;width:100%!important;margin:0!important;padding:18px!important;border:0!important;border-radius:0!important}
+  .invoice-receipt-actions{display:none!important}
+}
+
+/* Branded popovers for the billing status and date range filters. */
+.billing-filter-select{position:relative;width:100%;min-width:0}
+.billing-filter-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;height:36px;min-width:0;padding:0 9px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font:400 10px var(--font-body);text-align:left;white-space:nowrap;cursor:pointer;transition:border-color .15s ease,background .15s ease,box-shadow .15s ease}
+.billing-filter-trigger:hover,.billing-filter-trigger[aria-expanded="true"]{border-color:#acd9c2;background:#fcfffd}
+.billing-filter-trigger:focus-visible{outline:2px solid #b8e7ce;outline-offset:2px}
+.billing-filter-trigger>span{overflow:hidden;text-overflow:ellipsis}
+.billing-filter-chevron{flex:0 0 13px;width:13px;height:13px;color:#52746a;transition:transform .15s ease}
+.billing-filter-trigger[aria-expanded="true"] .billing-filter-chevron{transform:rotate(180deg)}
+.billing-filter-menu{position:absolute;z-index:40;top:calc(100% + 6px);left:0;width:max(100%,180px);max-width:min(240px,calc(100vw - 24px));padding:5px;border:1px solid #d9ebe2;border-radius:10px;background:#fff;box-shadow:0 12px 28px #183d341c;animation:billing-filter-menu-in .12s ease-out}
+.billing-filter-select-treatment .billing-filter-menu{width:100%;max-width:none;max-height:min(280px,45vh);overflow-y:auto}
+.billing-filter-trigger>span.is-placeholder{color:#8ca099;font-weight:400}
+.invoice-treatment-fields{grid-template-columns:minmax(0,1fr)}
+.invoice-form-section .billing-filter-trigger{height:42px;padding:0 12px;border-radius:9px;font-size:11px}
+.billing-filter-select-date .billing-filter-menu{width:max(100%,202px)}
+.billing-filter-option{display:flex;align-items:center;gap:9px;width:100%;min-height:42px;padding:0 10px;border:0;border-radius:7px;background:#fff;color:#526d65;font:400 11px var(--font-body);text-align:left;white-space:nowrap;cursor:pointer;transition:background .12s ease,color .12s ease}
+.billing-filter-option:hover,.billing-filter-option:focus-visible{outline:0;background:#f1faf5;color:#126b4f}
+.billing-filter-option.is-selected{background:#e9f7ef;color:#087a55;font-weight:650}
+.billing-filter-option.is-selected:hover,.billing-filter-option.is-selected:focus-visible{background:#e2f4e9}
+.billing-filter-option>span{flex:1}
+.billing-filter-menu .billing-filter-status-dot{display:block;flex:0 0 6px;width:6px;min-width:6px;height:6px;min-height:6px;margin:0;border-radius:50%;background:#16845f;font-style:normal}
+.billing-filter-option-status-unpaid .billing-filter-status-dot{background:#be741b}
+.billing-filter-option-status-partial-payment .billing-filter-status-dot{background:#3479d8}
+.billing-filter-calendar{flex:0 0 15px;width:15px;height:15px;color:#7b9b90}
+.billing-filter-check{flex:0 0 15px;width:15px;height:15px;color:#09845b}
+@keyframes billing-filter-menu-in{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:700px){.billing-filter-select-status{grid-column:1;grid-row:2}.billing-filter-select-date{grid-column:2;grid-row:2}.billing-filter-select-date .billing-filter-menu{left:auto;right:0}.billing-filter-menu{max-width:calc(100vw - 24px)}}
+.goal-details-notifications .goal-details-bell{display:grid;place-items:center;flex:0 0 18px;width:18px;height:18px;color:var(--primary)}
+.goal-details-bell svg{display:block;width:100%;height:100%}
+
+/* Larger typography and controls for the desktop Collection Goal Details page. */
+@media(min-width:701px){
+  .billing-goal-details-page{gap:20px}
+  .goal-details-back{gap:9px;font-size:13px}
+  .goal-details-back span{font-size:20px}
+  .goal-details-title-row{margin-top:-3px}
+  .goal-details-title-row h1{font-size:30px!important;letter-spacing:-.6px!important}
+  .goal-details-title-row p{margin-top:6px!important;font-size:14px!important}
+  .goal-details-edit{min-height:44px;padding:0 17px;border-radius:11px;font-size:12px}
+  .goal-details-edit span{font-size:15px}
+  .goal-details-progress{gap:12px;padding:20px;border-radius:15px}
+  .goal-details-progress-heading h2{font-size:18px}
+  .goal-details-progress-heading p{gap:7px;margin-top:6px;font-size:12px}
+  .goal-details-progress-heading p span{font-size:14px}
+  .goal-details-status{gap:6px;padding:7px 11px;font-size:10px}
+  .goal-details-status i{width:6px;height:6px}
+  .goal-details-progress-values small{font-size:11px}
+  .goal-details-progress-values strong{font-size:27px}
+  .goal-details-progress-meta{font-size:11px}
+  .goal-details-progress-track{height:8px}
+  .goal-details-info-grid{gap:18px}
+  .goal-details-card{padding:21px;border-radius:15px}
+  .goal-details-card h2,.goal-details-manage>h2{font-size:18px}
+  .goal-details-description>h2{margin-bottom:15px}
+  .goal-details-description>b{font-size:12px}
+  .goal-details-description>p{margin-top:7px;padding-bottom:15px;font-size:13px;line-height:1.6}
+  .goal-details-dates{gap:16px;margin-top:15px}
+  .goal-details-dates>div{gap:6px}
+  .goal-details-dates small{font-size:11px}
+  .goal-details-dates strong{font-size:12px}
+  .goal-details-dates strong span{margin-right:2px}
+  .goal-details-notifications>header>span{font-size:18px}
+  .goal-details-notifications .goal-details-bell{flex-basis:20px;width:20px;height:20px}
+  .goal-details-notifications>p{margin:8px 0 13px;font-size:11px}
+  .goal-details-notifications ul{gap:12px}
+  .goal-details-notifications li{gap:9px}
+  .goal-details-check{width:22px;height:22px;flex-basis:22px;font-size:12px}
+  .goal-details-notifications li>span:last-child{gap:3px}
+  .goal-details-notifications li b{font-size:11px}
+  .goal-details-notifications li small{font-size:10px;line-height:1.4}
+  .goal-details-manage{gap:11px}
+  .goal-details-manage>h2{font-size:18px}
+  .goal-details-manage-grid{gap:16px}
+  .goal-details-action-card{padding:20px;border-radius:15px}
+  .goal-details-action-card h3{gap:8px;font-size:13px}
+  .goal-details-action-card h3 span{font-size:15px}
+  .goal-details-action-card p{min-height:38px;margin:10px 0 12px;font-size:11px;line-height:1.55}
+  .goal-details-action-card button{min-height:38px;padding:0 14px;border-radius:9px;font-size:11px}
+}
+
+/* Collection goal completion and archived-goal management. */
+.billing-goal-heading{align-items:flex-start}
+.billing-goal-badges{display:flex;align-items:center;gap:7px;flex:0 0 auto}
+.billing-goal-state{display:inline-flex;align-items:center;gap:5px;min-height:22px;padding:0 9px;border:1px solid #ffffff35;border-radius:20px;background:#ffffff12;color:#e7f4ed;font-size:9px;font-weight:700;white-space:nowrap}
+.billing-goal-state i{width:6px;height:6px;border-radius:50%;background:#b8cfc4}
+.billing-goal-state.is-completed{border-color:#73e5a2;background:#e7fff0;color:#08734f}
+.billing-goal-state.is-completed i{background:#22a56c}
+.billing-collection-goal.is-completed{border-color:#127053}
+.billing-goal-completed-date{margin-top:-3px;color:#b9ebcc;font-size:10px}
+.billing-goal-tabs{display:flex;align-items:center;gap:7px;padding:5px;border:1px solid #dcebe3;border-radius:12px;background:#f4f8f6}
+.billing-goal-tabs button{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:0 15px;border:1px solid transparent;border-radius:9px;background:transparent;color:#71847c;font:500 11px var(--font-body);cursor:pointer;transition:background .16s ease,color .16s ease,border-color .16s ease,box-shadow .16s ease}
+.billing-goal-tabs button:hover{background:#eaf5ee;color:#25674f}
+.billing-goal-tabs button:focus-visible{outline:2px solid #9bd7b5;outline-offset:2px}
+.billing-goal-tabs button.is-active{border-color:#c2e8d0;background:#e4f6eb;color:#0d6548;font-weight:700;box-shadow:0 2px 7px #12623c14}
+.billing-goal-tabs button span{display:grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#e9efeb;color:#74847d;font-size:9px;font-weight:700;transition:background .16s ease,color .16s ease}
+.billing-goal-tabs button.is-active span{background:#c7efd6;color:#0b704c}
+.billing-archived-goals-panel{padding:0;overflow:hidden}
+.billing-archived-goals-panel>header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 19px;border-bottom:1px solid var(--border)}
+.billing-archived-goals-panel>header h2{margin:0;font-size:15px;font-weight:600}
+.billing-archived-goals-panel>header p{margin:5px 0 0;color:var(--muted);font-size:10px}
+.billing-archived-goals-panel>header>.count-pill{flex:0 0 auto}
+.billing-archived-goals-list{display:grid;gap:11px;padding:15px}
+.billing-archived-goal{padding:15px;border:1px solid var(--border);border-radius:12px;background:#fff}
+.billing-archived-goal-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.billing-archived-goal-heading>div{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.billing-archived-goal-heading h3{margin:0;color:var(--text);font:600 13px var(--font-heading)}
+.billing-archived-goal-heading>small{color:var(--muted);font-size:10px;white-space:nowrap}
+.billing-archived-status{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:20px;background:#f1f5f2;color:#62776f;font-size:9px;font-weight:700}
+.billing-archived-status i{width:6px;height:6px;border-radius:50%;background:#91a39a}
+.billing-archived-status.is-completed{background:#e9f8ef;color:#087a55}
+.billing-archived-status.is-completed i{background:#16845f}
+.billing-archived-goal-values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px;padding:12px;border-radius:9px;background:#f6faf8}
+.billing-archived-goal-values>div{display:flex;flex-direction:column;gap:5px;min-width:0}
+.billing-archived-goal-values small{color:var(--muted);font-size:9px}
+.billing-archived-goal-values strong{color:var(--text);font-size:12px;font-weight:700}
+.billing-archived-goal-values strong span{color:var(--muted);font-size:10px;font-weight:500}
+.billing-archived-goal>footer{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:12px}
+.billing-archived-goal>footer button{min-height:33px;padding:0 11px;border-radius:8px;font-size:10px}
+.billing-archived-delete{border:1px solid #f0d8d5;background:#fff6f5;color:#c93631;font:600 10px var(--font-body);cursor:pointer}
+.billing-archived-delete:hover{background:#ffebe9}
+.billing-archived-empty{display:flex;min-height:255px;align-items:center;justify-content:center;flex-direction:column;padding:25px;text-align:center}
+.billing-archived-empty>span{display:grid;place-items:center;width:43px;height:43px;border-radius:13px;background:var(--primary-soft);color:var(--primary);font-size:20px}
+.billing-archived-empty h3{margin:12px 0 4px;color:var(--text);font:600 15px var(--font-heading)}
+.billing-archived-empty p{max-width:370px;margin:0;color:var(--muted);font-size:10px;line-height:1.5}
+.goal-details-status.is-completed{background:#e9f8ef;color:#087a55}
+.goal-details-status.is-completed i{background:#16845f}
+.goal-details-dates.has-completion-date{grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}
+.goal-details-history{padding:17px;border-radius:13px;box-shadow:none}
+.goal-details-history>header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.goal-details-history>header h2{margin:0;color:var(--text);font:500 15px var(--font-heading)}
+.goal-details-history>header p{margin:5px 0 0;color:var(--muted);font-size:10px}
+.goal-details-history>header>span{flex:0 0 auto;padding:5px 9px;border-radius:20px;background:#f1f7f3;color:var(--muted);font-size:9px}
+.goal-details-history ol{display:grid;gap:7px;margin:0;padding:0;list-style:none}
+.goal-details-history li{display:grid;grid-template-columns:1fr 1.2fr 1.2fr 52px;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:9px;color:var(--muted);font-size:10px}
+.goal-details-history li time{color:var(--text);font-weight:600}
+.goal-details-history li b{text-align:right;color:var(--primary);font-size:11px}
+.goal-details-history-empty{padding:16px;border-radius:9px;background:#f7faf8;color:var(--muted);font-size:10px;text-align:center}
+.goal-details-manage-grid.is-archived{grid-template-columns:minmax(0,1fr)}
+@media(max-width:650px){
+ .billing-archived-goal-heading{flex-direction:column}
+ .billing-archived-goal-values{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .billing-archived-goal>footer{justify-content:stretch}
+ .billing-archived-goal>footer button{flex:1}
+ .goal-details-history li{grid-template-columns:1fr 1fr;gap:7px}
+ .goal-details-history li b{text-align:left}
+}
+.billing-archived-empty-state{display:flex;min-height:308px;align-items:center;justify-content:center;flex-direction:column;padding:8px 20px 18px;text-align:center}
+.billing-archived-empty-message{display:flex;align-items:center;flex-direction:column;text-align:center}
+.billing-archived-empty-illustration{display:block;width:174px;height:146px;flex:0 0 auto}
+.billing-archived-empty-message h3{margin:7px 0 0;color:var(--text);font:500 20px var(--font-heading);letter-spacing:-.25px}
+.billing-archived-empty-message p{max-width:470px;margin:8px 0 0;color:var(--muted);font-size:12px;line-height:1.5}
+.billing-archived-empty-message p.billing-archived-empty-secondary{margin-top:4px}
+.billing-archived-empty-actions{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:16px}
+.billing-archived-empty-actions button{min-height:38px}
+.billing-archived-data-note{display:flex;width:min(780px,100%);align-items:center;justify-content:center;gap:7px 15px;flex-wrap:wrap;margin:12px auto 0;padding:9px 12px;border:1px solid #e3eee8;border-radius:10px;background:#f7fbf8;color:var(--muted);font-size:9px;line-height:1.4}
+.billing-archived-data-note>b{color:#385c50;font-size:9px;font-weight:650}
+.billing-archived-data-note>span{white-space:nowrap}
+.billing-archived-data-note>span::before{display:inline-block;width:5px;height:5px;margin:0 6px 1px 0;border-radius:50%;background:#67c98d;content:""}
+@media(max-width:650px){
+ .billing-archived-empty-state{padding:25px 13px 15px}
+ .billing-archived-empty-illustration{width:150px;height:126px}
+ .billing-archived-empty-message h3{font-size:18px}
+ .billing-archived-empty-message p{font-size:11px}
+ .billing-archived-data-note{gap:7px 10px;padding:9px}
+}
+.goal-archive-backdrop{z-index:61;display:flex;align-items:center;justify-content:center;padding:18px}
+.goal-archive-dialog{width:min(540px,100%);max-height:calc(100vh - 36px);overflow-y:auto;margin:auto;padding:24px;border:1px solid #d7ebe0;border-radius:19px;background:#fff;box-shadow:0 24px 75px #153b3033;animation:goal-archive-dialog-in .2s ease-out}
+@keyframes goal-archive-dialog-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.goal-archive-icon{display:grid;place-items:center;width:45px;height:45px;margin-bottom:14px;border:1px solid #ccebd8;border-radius:14px;background:#eaf8f0;color:#13835d}
+.goal-archive-icon svg{width:23px;height:23px}
+.goal-archive-dialog h2{margin:0;color:var(--text);font:600 20px var(--font-heading);letter-spacing:-.3px}
+.goal-archive-dialog>p{margin:9px 0 0;color:var(--muted);font-size:11px;line-height:1.55}
+.goal-archive-dialog>p.goal-archive-description{margin-top:5px}
+.goal-archive-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 15px;margin:17px 0 0;padding:14px;border:1px solid #e1eee7;border-radius:12px;background:#f7fbf8}
+.goal-archive-summary>div{display:flex;min-width:0;flex-direction:column;gap:4px}
+.goal-archive-summary dt{color:var(--muted);font-size:9px}
+.goal-archive-summary dd{margin:0;color:var(--text);font-size:11px;font-weight:650;overflow-wrap:anywhere}
+.goal-archive-summary dd>span{color:#687d74;font-weight:600}
+.goal-archive-summary dd>span.is-completed{color:#087a55}
+.goal-archive-dialog>footer{display:flex;justify-content:flex-end;gap:9px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+.goal-archive-dialog>footer button{min-height:39px;padding:0 14px;border-radius:9px;font-size:10px}
+.goal-archive-dialog>footer .primary-button{display:inline-flex;align-items:center;gap:7px}
+.goal-archive-dialog>footer .primary-button svg{width:15px;height:15px}
+.goal-archive-toast{position:fixed;z-index:80;right:max(20px,calc((100vw - 1440px)/2 + 20px));bottom:24px;display:grid;grid-template-columns:34px minmax(0,1fr) 24px;align-items:start;gap:11px;width:min(420px,calc(100vw - 32px));padding:15px;border:1px solid #cdebd8;border-radius:13px;background:#fff;box-shadow:0 12px 36px #173c3424;animation:goal-archive-toast-in .2s ease-out}
+.goal-archive-toast-icon{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:#e6f7ed;color:#10835b;font-size:17px;font-weight:800}
+.goal-archive-toast>div>b{display:block;color:var(--text);font-size:12px}
+.goal-archive-toast>div>p{margin:4px 0 7px;color:var(--muted);font-size:10px;line-height:1.45}
+.goal-archive-toast>div>button{padding:0;border:0;background:none;color:#087a55;font:700 10px var(--font-body);cursor:pointer}
+.goal-archive-toast>div>button:hover{text-decoration:underline}
+.goal-archive-toast-close{width:24px;height:24px;border:0;border-radius:7px;background:#f1f7f3;color:#71877e;font-size:17px;line-height:1;cursor:pointer}
+.goal-archive-toast-close:hover{background:#e4f3e9;color:var(--primary)}
+@keyframes goal-archive-toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:520px){
+ .goal-archive-backdrop{padding:12px}
+ .goal-archive-dialog{max-height:calc(100vh - 24px);padding:20px;border-radius:16px}
+ .goal-archive-dialog h2{font-size:18px}
+ .goal-archive-summary{gap:9px;padding:12px}
+ .goal-archive-dialog>footer button{flex:1}
+ .goal-archive-toast{right:16px;bottom:16px}
+}

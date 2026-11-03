@@ -1,0 +1,12 @@
+.git
+.env
+.env.*
+!.env.example
+!.env.staging.example
+node_modules
+dist
+server/data
+server/backups
+backups
+coverage
+npm-debug.log*

@@ -1,0 +1,41 @@
+{
+  "name": "react-admin",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "build": "vite build",
+    "start": "node scripts/start.js",
+    "db:migrate": "node scripts/run-migrations.js",
+    "db:import-sqlite": "node scripts/migrate-sqlite-to-postgres.js",
+    "admin:create": "node scripts/create-admin.js",
+    "admin:mfa:setup": "node scripts/setup-admin-mfa.js",
+    "admin:mfa:reset": "node scripts/reset-admin-mfa.js",
+    "email:test": "node scripts/send-test-email.js",
+    "lint": "eslint .",
+    "smoke:roboflow": "node scripts/smoke-roboflow-workflow.js",
+    "dev:ui": "vite",
+    "server": "node server/index.js"
+  },
+  "dependencies": {
+    "pg": "^8.23.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "resend": "^6.37.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "eslint": "^10.10.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.6",
+    "globals": "^17.12.0",
+    "vite": "^8.3.0"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}

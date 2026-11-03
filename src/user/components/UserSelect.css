@@ -1,0 +1,23 @@
+.user-select{position:relative;display:block;width:100%;min-width:0;color:#173d34;font:inherit}
+.user-select-trigger{display:flex;width:100%;min-height:44px;align-items:center;justify-content:space-between;gap:12px;padding:10px 13px;border:1px solid #dce9e2;border-radius:10px;background:#fff;color:#24483a;font:500 12px/1.4 'DM Sans','Segoe UI',sans-serif;text-align:left;cursor:pointer;transition:border-color .16s ease,box-shadow .16s ease,background-color .16s ease}
+.user-select-trigger>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user-select-trigger>span.is-placeholder{color:#81958a;font-weight:400}
+.user-select-chevron{width:17px;height:17px;flex:0 0 17px;color:#16825f;transition:transform .16s ease}
+.user-select-trigger:hover,.user-select.is-open .user-select-trigger{border-color:#9dd9b6;box-shadow:0 0 0 3px #68dfa01a}
+.user-select.is-open .user-select-chevron{transform:rotate(180deg)}
+.user-select-trigger:focus-visible{outline:3px solid #68dfa055;outline-offset:2px}
+.user-select.is-invalid .user-select-trigger{border-color:#cf7774;box-shadow:0 0 0 3px #cf77741c}
+.user-select.is-disabled .user-select-trigger{background:#f5f9f6;color:#9aaba2;cursor:not-allowed}
+.user-select-menu{position:absolute;z-index:80;top:calc(100% + 7px);left:0;width:100%;max-height:min(320px,50vh);overflow:auto;padding:6px;border:1px solid #d9e9df;border-radius:12px;background:#fff;box-shadow:0 14px 34px #173d341c;overscroll-behavior:contain;animation:user-select-appear .13s ease-out}
+.user-select-group+.user-select-group{margin-top:4px;padding-top:4px;border-top:1px solid #edf4ef}
+.user-select-group-label{padding:7px 9px 5px;color:#13825f;font-size:10px;font-weight:800;letter-spacing:.25px}
+.user-select-option{display:flex;width:100%;min-height:38px;align-items:center;justify-content:space-between;gap:10px;padding:7px 10px;border:0;border-radius:8px;background:#fff;color:#35594c;font:400 11px/1.4 'DM Sans','Segoe UI',sans-serif;text-align:left;cursor:pointer;transition:background-color .12s ease,color .12s ease}
+.user-select-option:hover,.user-select-option:focus-visible{outline:none;background:#f0faf4;color:#08734f}
+.user-select-option.is-selected{background:#eaf9f1;color:#08734f;font-weight:700}
+.user-select-option svg{width:15px;height:15px;flex:0 0 15px;color:#13825f}
+.user-select-error{display:block;margin-top:5px;color:#b45353;font:500 10px/1.4 'DM Sans','Segoe UI',sans-serif}
+.user-select-validation{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;clip-path:inset(50%)!important;white-space:nowrap!important;opacity:0!important;pointer-events:none!important}
+.registration-field .user-select-validation,.portal-edit-field .user-select-validation{min-height:0!important;margin:0!important;padding:0!important;border:0!important;background:transparent!important}
+@keyframes user-select-appear{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:700px){.user-select-trigger{min-height:46px;padding:11px 12px}.user-select-menu{max-height:min(280px,48vh)}.user-select-option{min-height:42px;padding-inline:11px}}
+@media(prefers-reduced-motion:reduce){.user-select-trigger,.user-select-chevron,.user-select-option{transition:none}.user-select-menu{animation:none}}

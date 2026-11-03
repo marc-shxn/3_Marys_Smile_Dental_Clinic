@@ -1,0 +1,27 @@
+.admin-select{position:relative;width:100%;min-width:0;font-family:var(--font-body,inherit)}
+.admin-select-trigger{display:flex;width:100%;min-height:42px;align-items:center;justify-content:space-between;gap:12px;padding:0 13px;border:1px solid var(--border,#d8ebe1);border-radius:10px;background:#fff;color:var(--text,#173b32);font:500 12px/1.35 var(--font-body,inherit);text-align:left;cursor:pointer;transition:border-color .16s,box-shadow .16s,background .16s}
+.admin-select-trigger:hover,.admin-select.is-open .admin-select-trigger{border-color:#8bd7ad;background:#fcfffd}
+.admin-select-trigger:focus-visible{outline:3px solid #dff5e8;outline-offset:2px}
+.admin-select-trigger:disabled{opacity:.58;cursor:not-allowed}
+.admin-select-trigger>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin-select-trigger>span.is-placeholder{color:#82978f;font-weight:400}
+.admin-select-trigger svg{width:15px;height:15px;flex:0 0 15px;fill:none;stroke:#24845f;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .16s}
+.admin-select.is-open .admin-select-trigger svg{transform:rotate(180deg)}
+.admin-select-menu{position:absolute;z-index:1000;top:calc(100% + 6px);left:0;width:max(100%,190px);max-width:min(340px,calc(100vw - 28px));max-height:min(280px,45vh);overflow:auto;padding:5px;border:1px solid #d5e9de;border-radius:12px;background:#fff;box-shadow:0 14px 34px #173b321c;overscroll-behavior:contain;animation:admin-select-in .13s ease-out}
+.admin-select-option{display:flex;width:100%;min-height:38px;align-items:center;gap:9px;padding:7px 10px;border:0;border-radius:8px;background:#fff;color:#45645a;font:400 12px/1.35 var(--font-body,inherit);text-align:left;cursor:pointer;transition:background .12s,color .12s}
+.admin-select-option:hover,.admin-select-option:focus-visible{outline:0;background:#f0faf4;color:#087a55}
+.admin-select-option.is-selected{background:#e8f7ee;color:#087a55;font-weight:650}
+.admin-select-option>span:first-child{flex:1;min-width:0}
+.admin-select-check{min-width:14px;color:#16855f;font-weight:800;text-align:center}
+.admin-select.is-invalid .admin-select-trigger{border-color:#e7a8a0;box-shadow:0 0 0 2px #fff0ee}
+.admin-select.is-compact .admin-select-trigger{min-height:36px;padding:0 10px;border-radius:9px;font-size:11px}
+.admin-select.is-compact .admin-select-option{min-height:34px;font-size:11px}
+.appointment-status-select{width:132px}
+.patient-date-menu-header .patient-calendar-select:first-child{flex:1;min-width:0}
+.patient-date-menu-header .patient-calendar-select:last-child{width:88px;flex:0 0 88px}
+.patient-date-menu-header .patient-calendar-select .admin-select-trigger{min-height:34px;padding:0 9px;border-radius:8px;background:#f7faf9;font-size:10px}
+.patient-date-menu-header .patient-calendar-select .admin-select-menu{width:max(100%,110px);max-height:210px}
+.patient-date-menu-header .patient-calendar-select:last-child .admin-select-menu{left:auto;right:0}
+.form-modal-select .admin-select-trigger{min-height:44px}
+@keyframes admin-select-in{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.admin-select-trigger,.admin-select-trigger svg,.admin-select-option{transition:none}.admin-select-menu{animation:none}}
