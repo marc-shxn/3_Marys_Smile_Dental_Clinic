@@ -480,6 +480,37 @@ async function ensurePatientNumber(account) {
     throw error;
   }
 }
+async function loginAdmin(req, res, email, password, { exposeSetupError = true } = {}) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || password.length > 256) {
+    return json(res, 401, { error: 'Email or password is incorrect.' });
+  }
+  if (!(await db.prepare('SELECT 1 FROM admin_users LIMIT 1').get())) {
+    return exposeSetupError
+      ? json(res, 503, { error: 'No admin account is set up yet. Run npm run admin:create on the clinic server first.' })
+      : json(res, 401, { error: 'Email or password is incorrect.' });
+  }
+  const ipKey = loginIpKey(req, 'admin');
+  if ((await isRateLimited('admin_login_throttles', email)) || (await isRateLimited('ip_login_throttles', ipKey))) return json(res, 429, { error: 'Too many sign-in attempts. Try again in 15 minutes.' });
+  const account = (await db.prepare('SELECT admin_id, full_name, email, phone, role, password_hash, password_salt, mfa_secret_ciphertext, mfa_secret_iv, mfa_secret_tag, mfa_enabled_at, mfa_last_totp_step FROM admin_users WHERE email=? AND is_active=1').get(email));
+  if (!account || !verifyHash(password, account.password_salt, account.password_hash)) {
+    const blocked = (await recordFailedAttempt('admin_login_throttles', email, 10, 15 * 60));
+    const ipBlocked = (await recordFailedAttempt('ip_login_throttles', ipKey, 40, 15 * 60));
+    const limited = blocked || ipBlocked;
+    return json(res, limited ? 429 : 401, { error: limited ? 'Too many sign-in attempts. Try again in 15 minutes.' : 'Email or password is incorrect.' });
+  }
+  if (!account.mfa_enabled_at || !account.mfa_secret_ciphertext) {
+    if (productionMode) return json(res, 403, { error: 'Admin multi-factor authentication must be enrolled by the server operator before sign-in.', code: 'ADMIN_MFA_SETUP_REQUIRED' });
+    (await clearFailedAttempts('admin_login_throttles', email));
+    const localSession = (await issueAdminSession(req, account));
+    return json(res, 200, localSession.body, { 'Set-Cookie': localSession.cookie });
+  }
+  (await clearFailedAttempts('admin_login_throttles', email));
+  (await db.prepare('DELETE FROM admin_mfa_challenges WHERE admin_id=? AND used_at IS NULL').run(account.admin_id));
+  const challengeToken = randomBytes(32).toString('hex');
+  (await db.prepare('INSERT INTO admin_mfa_challenges (challenge_id, admin_id, token_hash, expires_at) VALUES (?, ?, ?, ?)')
+    .run(randomUUID(), account.admin_id, hashToken(challengeToken), Math.floor(Date.now() / 1000) + 5 * 60));
+  return json(res, 200, { mfaRequired: true, challengeToken });
+}
 async function handle(req, res) {
   const url = new URL(req.url || '/', 'http://localhost');
   if (req.method === 'GET' && url.pathname === '/api/health') return json(res, 200, { ok: true, database: 'postgres' });
@@ -493,35 +524,7 @@ async function handle(req, res) {
   }
   if (req.method === 'POST' && url.pathname === '/api/admin/auth/login') {
     const body = await readBody(req);
-    const email = normalizeEmail(body.email);
-    const password = String(body.password || '');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || password.length > 256) {
-      return json(res, 401, { error: 'Email or password is incorrect.' });
-    }
-    if (!(await db.prepare('SELECT 1 FROM admin_users LIMIT 1').get())) {
-      return json(res, 503, { error: 'No admin account is set up yet. Run npm run admin:create on the clinic server first.' });
-    }
-    const ipKey = loginIpKey(req, 'admin');
-    if ((await isRateLimited('admin_login_throttles', email)) || (await isRateLimited('ip_login_throttles', ipKey))) return json(res, 429, { error: 'Too many sign-in attempts. Try again in 15 minutes.' });
-    const account = (await db.prepare('SELECT admin_id, full_name, email, phone, role, password_hash, password_salt, mfa_secret_ciphertext, mfa_secret_iv, mfa_secret_tag, mfa_enabled_at, mfa_last_totp_step FROM admin_users WHERE email=? AND is_active=1').get(email));
-    if (!account || !verifyHash(password, account.password_salt, account.password_hash)) {
-      const blocked = (await recordFailedAttempt('admin_login_throttles', email, 10, 15 * 60));
-      const ipBlocked = (await recordFailedAttempt('ip_login_throttles', ipKey, 40, 15 * 60));
-      const limited = blocked || ipBlocked;
-      return json(res, limited ? 429 : 401, { error: limited ? 'Too many sign-in attempts. Try again in 15 minutes.' : 'Email or password is incorrect.' });
-    }
-    if (!account.mfa_enabled_at || !account.mfa_secret_ciphertext) {
-      if (productionMode) return json(res, 403, { error: 'Admin multi-factor authentication must be enrolled by the server operator before sign-in.', code: 'ADMIN_MFA_SETUP_REQUIRED' });
-      (await clearFailedAttempts('admin_login_throttles', email));
-      const localSession = (await issueAdminSession(req, account));
-      return json(res, 200, localSession.body, { 'Set-Cookie': localSession.cookie });
-    }
-    (await clearFailedAttempts('admin_login_throttles', email));
-    (await db.prepare('DELETE FROM admin_mfa_challenges WHERE admin_id=? AND used_at IS NULL').run(account.admin_id));
-    const challengeToken = randomBytes(32).toString('hex');
-    (await db.prepare('INSERT INTO admin_mfa_challenges (challenge_id, admin_id, token_hash, expires_at) VALUES (?, ?, ?, ?)')
-      .run(randomUUID(), account.admin_id, hashToken(challengeToken), Math.floor(Date.now() / 1000) + 5 * 60));
-    return json(res, 200, { mfaRequired: true, challengeToken });
+    return loginAdmin(req, res, normalizeEmail(body.email), String(body.password || ''));
   }
   if (req.method === 'POST' && url.pathname === '/api/admin/auth/verify-mfa') {
     const body = await readBody(req);
@@ -764,11 +767,22 @@ async function handle(req, res) {
   if (req.method === 'POST' && url.pathname === '/api/auth/login') {
     const body = await readBody(req);
     const email = normalizeEmail(body.email);
-    if (!isGmailAddress(email)) return json(res, 400, { error: 'Enter a valid Gmail address ending in @gmail.com.' });
+    const password = String(body.password || '');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) return json(res, 400, { error: 'Enter a valid email address.' });
+    if (!isGmailAddress(email)) return loginAdmin(req, res, email, password, { exposeSetupError: false });
+    const row = (await db.prepare('SELECT a.account_id, a.full_name, a.email, a.phone, a.password_hash, a.password_salt, p.patient_number FROM patient_accounts a LEFT JOIN patients p ON p.account_id=a.account_id WHERE a.email=?').get(email));
+    if (!row) return loginAdmin(req, res, email, password, { exposeSetupError: false });
     const ipKey = loginIpKey(req, 'patient');
     if ((await isRateLimited('patient_login_throttles', email)) || (await isRateLimited('ip_login_throttles', ipKey))) return json(res, 429, { error: 'Too many sign-in attempts. Try again in 15 minutes.' });
-    const row = (await db.prepare('SELECT a.account_id, a.full_name, a.email, a.phone, a.password_hash, a.password_salt, p.patient_number FROM patient_accounts a LEFT JOIN patients p ON p.account_id=a.account_id WHERE a.email=?').get(email));
-    if (!row || String(body.password || '').length > 256 || !verifyHash(String(body.password || ''), row.password_salt, row.password_hash)) {
+    const adminCredential = (await db.prepare('SELECT password_hash, password_salt FROM admin_users WHERE email=? AND is_active=1').get(email));
+    if (adminCredential) {
+      const adminIpKey = loginIpKey(req, 'admin');
+      const adminLimited = (await isRateLimited('admin_login_throttles', email)) || (await isRateLimited('ip_login_throttles', adminIpKey));
+      if (!adminLimited && password.length <= 256 && verifyHash(password, adminCredential.password_salt, adminCredential.password_hash)) {
+        return loginAdmin(req, res, email, password);
+      }
+    }
+    if (password.length > 256 || !verifyHash(password, row.password_salt, row.password_hash)) {
       const blocked = (await recordFailedAttempt('patient_login_throttles', email, 10, 15 * 60));
       const ipBlocked = (await recordFailedAttempt('ip_login_throttles', ipKey, 40, 15 * 60));
       const limited = blocked || ipBlocked;

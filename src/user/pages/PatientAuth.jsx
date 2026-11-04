@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { authApi } from '../../shared/services/authApi.js';
+import { loadAdminSession, verifyAdminMfa } from '../../admin/adminAuth.js';
 
 const modes = {
   '/login': 'login', '/patient-login': 'login', '/create-account': 'register',
@@ -16,6 +17,8 @@ export default function PatientAuth({ route, navigate }) {
   const [rememberEmail, setRememberEmail] = useState(() => Boolean(localStorage.getItem('patient-login-email')));
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [adminChallengeToken, setAdminChallengeToken] = useState('');
+  const [adminMfaCode, setAdminMfaCode] = useState('');
   const [resendMessage, setResendMessage] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -74,7 +77,7 @@ export default function PatientAuth({ route, navigate }) {
     setBusy(true);
     try {
       const email = form.email.trim().toLowerCase();
-      if (['register', 'login', 'forgot'].includes(mode) && !isGmailAddress(email)) throw new Error('Enter a valid Gmail address ending in @gmail.com.');
+      if (['register', 'forgot'].includes(mode) && !isGmailAddress(email)) throw new Error('Enter a valid Gmail address ending in @gmail.com.');
       if (mode === 'register') {
         const firstName = formatPersonName(form.firstName).trim();
         const middleName = formatPersonName(form.middleName).trim();
@@ -90,11 +93,27 @@ export default function PatientAuth({ route, navigate }) {
         setCode(['', '', '', '']);
         navigate('/verify-email?email=' + encodeURIComponent(email));
       } else if (mode === 'login') {
+        if (adminChallengeToken) {
+          await verifyAdminMfa(adminChallengeToken, adminMfaCode);
+          navigate('/admin');
+          return;
+        }
         if (!form.password) throw new Error('Enter your password to continue.');
         if (rememberEmail) localStorage.setItem('patient-login-email', email);
         else localStorage.removeItem('patient-login-email');
-        await authApi.login({ email, password: form.password });
-        navigate('/');
+        const result = await authApi.login({ email, password: form.password });
+        if (result.mfaRequired) {
+          setForm(current => ({ ...current, password: '' }));
+          setAdminChallengeToken(result.challengeToken);
+          setAdminMfaCode('');
+          return;
+        }
+        if (result.admin) {
+          await loadAdminSession();
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
       } else if (mode === 'verify') {
         await authApi.verifyEmail({ email: emailForVerify, code: code.join('') });
         navigate('/email-verified?email=' + encodeURIComponent(emailForVerify));
@@ -164,8 +183,8 @@ export default function PatientAuth({ route, navigate }) {
   }
 
   const notice = url.searchParams.get('created') ? 'Your account is ready. Sign in to continue.' : url.searchParams.get('reset') ? 'Your password has been updated. Sign in with your new password.' : '';
-  const title = mode === 'register' ? 'Create your account' : mode === 'verify' ? 'Verify your email' : mode === 'verified' ? 'Email verified!' : mode === 'forgot' ? 'Forgot your password?' : mode === 'reset' ? 'Create a new password' : mode === 'sent' ? 'Check your email' : 'Patient log in';
-  const description = mode === 'register' ? 'Create an account to access your dental care.' : mode === 'verify' ? 'Enter the four-digit code sent to your email address.' : mode === 'verified' ? 'Your email address has been confirmed.' : mode === 'forgot' ? 'Enter the email address linked to your account and we’ll send a reset code.' : mode === 'reset' ? 'Choose a new password for your account.' : mode === 'sent' ? 'Enter the four-digit code sent to your email address.' : 'Signing in is only needed when you book an appointment.';
+  const title = adminChallengeToken && mode === 'login' ? 'Verify admin sign in' : mode === 'register' ? 'Create your account' : mode === 'verify' ? 'Verify your email' : mode === 'verified' ? 'Email verified!' : mode === 'forgot' ? 'Forgot your password?' : mode === 'reset' ? 'Create a new password' : mode === 'sent' ? 'Check your email' : 'Patient log in';
+  const description = adminChallengeToken && mode === 'login' ? 'Enter the six-digit code from your authenticator app to continue to the clinic dashboard.' : mode === 'register' ? 'Create an account to access your dental care.' : mode === 'verify' ? 'Enter the four-digit code sent to your email address.' : mode === 'verified' ? 'Your email address has been confirmed.' : mode === 'forgot' ? 'Enter the email address linked to your account and we’ll send a reset code.' : mode === 'reset' ? 'Choose a new password for your account.' : mode === 'sent' ? 'Enter the four-digit code sent to your email address.' : 'Patients can sign in for appointments and care. Admins can sign in here to open the clinic dashboard.';
   const cardClass = 'auth-card auth-card-' + mode;
   return <main className={'patient-auth auth-mode-' + mode}>
     <header className="auth-topbar">{mode === 'login' || mode === 'register' ? <button type="button" className="auth-back-top auth-back-action" onClick={() => navigate('/')}><svg className="back-arrow" viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5M7.5 10H16" /></svg><span>Back to Home</span></button> : mode === 'forgot' || mode === 'sent' || mode === 'reset' ? null : <a className="auth-brand" href="/" onClick={event => { event.preventDefault(); navigate('/'); }}><img src="/clinic-logo.svg" alt="3 Mary’s Smile Dental Clinic" /></a>}{mode === 'forgot' && <button type="button" className="auth-home-link auth-back-action" onClick={() => navigate('/')}><svg className="back-arrow" viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5M7.5 10H16" /></svg>Back to Home</button>}{(mode === 'sent' || mode === 'reset') && <button type="button" className="auth-home-link auth-back-action" aria-label="Back" onClick={() => navigate(mode === 'sent' ? '/forgot-password?email=' + encodeURIComponent(emailForReset) + (url.searchParams.get('next') ? '&next=' + encodeURIComponent(url.searchParams.get('next')) : '') : '/reset-link-sent?email=' + encodeURIComponent(emailForReset) + (url.searchParams.get('next') ? '&next=' + encodeURIComponent(url.searchParams.get('next')) : ''))}><svg className="back-arrow" viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5M7.5 10H16" /></svg>Back</button>}{mode !== 'login' && mode !== 'register' && mode !== 'forgot' && mode !== 'sent' && mode !== 'reset' && <div className="auth-top-link"><button type="button" className="back-link auth-back-action" onClick={() => navigate('/patient-login' + (url.searchParams.get('next') ? '?next=' + encodeURIComponent(url.searchParams.get('next')) : ''))}><svg className="back-arrow" viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5M7.5 10H16" /></svg>Back to log in</button></div>}</header>
@@ -177,14 +196,14 @@ export default function PatientAuth({ route, navigate }) {
       {mode === 'verify' ? <form className="auth-form reset-code-form" onSubmit={submit}><p className="reset-email">{emailForVerify}</p><p className="verification-copy">Enter the code we sent to this email address to activate your account.</p><div className="code-inputs" aria-label="Four-digit verification code">{code.map((digit, index) => <input id={'reset-code-' + index} key={index} aria-label={'Code digit ' + (index + 1)} inputMode="numeric" autoComplete={index === 0 ? 'one-time-code' : 'off'} maxLength="1" value={digit} onChange={event => changeCode(index, event.target.value)} onPaste={pasteCode} required />)}</div>{devVerifyCode && <p className="dev-code" role="status">Local demo code: <b>{devVerifyCode}</b></p>}{error && <p className="auth-error" role="alert">{error}</p>}{resendMessage && <p className="prototype-note" role="status">{resendMessage}</p>}<button className="auth-primary" type="submit" disabled={busy || code.some(value => !value)}>{busy ? 'Please wait…' : 'Verify email'}</button><p className="resend-copy">Didn’t receive a code? <button type="button" onClick={resendVerification} disabled={busy}>Resend code</button></p></form> : mode === 'verified' ? <div className="email-flow-screen verified-screen"><span className="verified-icon" aria-hidden="true">✓</span><p className="auth-kicker">EMAIL CONFIRMED</p><h2>Your email is verified</h2><p className="verification-copy">Thanks for confirming <b>{emailForVerify}</b>. Your email address is ready to use.</p><button type="button" className="auth-primary" onClick={() => navigate('/patient-login?verified=1')}>Continue to Login</button></div> : mode === 'sent' ? <form className="auth-form reset-code-form" onSubmit={submit}><p className="reset-email">{emailForReset}</p><div className="code-inputs" aria-label="Four-digit reset code">{code.map((digit, index) => <input id={'reset-code-' + index} key={index} aria-label={'Code digit ' + (index + 1)} inputMode="numeric" autoComplete={index === 0 ? 'one-time-code' : 'off'} maxLength="1" value={digit} onChange={event => changeCode(index, event.target.value)} onPaste={pasteCode} required />)}</div>{devResetCode && <p className="dev-code" role="status">Local demo code: <b>{devResetCode}</b></p>}{error && <p className="auth-error" role="alert">{error}</p>}<button className="auth-primary" type="submit" disabled={busy || code.some(value => !value)}>{busy ? 'Please wait…' : 'Verify code'}</button><p className="resend-copy">Didn’t receive a code? <button type="button" onClick={resendCode} disabled={busy}>Resend code</button></p></form> : <form className="auth-form" onSubmit={submit} noValidate={mode === 'register'}>
         {mode === 'register' && <><label>First Name<input name="firstName" autoComplete="given-name" value={form.firstName} onChange={update} placeholder="Enter your first name" /></label><label>Middle Name (optional)<input name="middleName" autoComplete="additional-name" value={form.middleName} onChange={update} placeholder="Enter your middle name" /></label><label>Last Name<input name="lastName" autoComplete="family-name" value={form.lastName} onChange={update} placeholder="Enter your last name" /></label><label>Email Address<input name="email" type="email" autoComplete="email" value={form.email} onChange={update} placeholder="name@gmail.com" /></label><label>Phone Number (optional)<input name="phone" type="tel" autoComplete="tel" value={form.phone} onChange={update} placeholder="Enter your phone number" /></label><label>Password<div className="password-wrap"><input name="password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={form.password} onChange={update} minLength="8" placeholder="At least 8 characters" /><button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? 'Hide' : 'Show'}</button></div></label><label>Confirm Password<div className="password-wrap"><input name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} autoComplete="new-password" value={form.confirmPassword} onChange={update} minLength="8" placeholder="Re-enter your password" /><button type="button" onClick={() => setShowConfirmPassword(value => !value)} aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}>{showConfirmPassword ? 'Hide' : 'Show'}</button></div></label><small className="field-help">Use at least 8 characters. Enter the same password in both fields.</small></>}
         {mode === 'forgot' && <label>Email address<input name="email" type="email" autoComplete="email" value={form.email} onChange={update} placeholder="name@gmail.com" required /></label>}
-        {mode === 'login' && <><label>Email address<input name="email" type="email" autoComplete="email" value={form.email} onChange={update} placeholder="name@gmail.com" required /></label><label>Password<div className="password-wrap"><input name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={form.password} onChange={update} placeholder="Enter your password" required /><button type="button" onClick={() => setShowPassword(value => !value)}>{showPassword ? 'Hide' : 'Show'}</button></div></label><div className="auth-options"><label className="remember"><input type="checkbox" checked={rememberEmail} onChange={event => setRememberEmail(event.target.checked)} /> Remember me</label><button type="button" className="text-link" onClick={() => navigate('/forgot-password' + (url.searchParams.get('next') ? '?next=' + encodeURIComponent(url.searchParams.get('next')) : ''))}>Forgot password?</button></div></>}
+        {mode === 'login' && (adminChallengeToken ? <><label>Admin authenticator code<input name="adminMfaCode" inputMode="numeric" autoComplete="one-time-code" maxLength="6" value={adminMfaCode} onChange={event => setAdminMfaCode(event.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Enter the six-digit code" required /></label><button type="button" className="text-link" onClick={() => { setAdminChallengeToken(''); setAdminMfaCode(''); setError(''); }}>Back to email and password</button></> : <><label>Email address<input name="email" type="email" autoComplete="email" value={form.email} onChange={update} placeholder="Email address" required /></label><label>Password<div className="password-wrap"><input name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={form.password} onChange={update} placeholder="Enter your password" required /><button type="button" onClick={() => setShowPassword(value => !value)}>{showPassword ? 'Hide' : 'Show'}</button></div></label><div className="auth-options"><label className="remember"><input type="checkbox" checked={rememberEmail} onChange={event => setRememberEmail(event.target.checked)} /> Remember me</label><button type="button" className="text-link" onClick={() => navigate('/forgot-password' + (url.searchParams.get('next') ? '?next=' + encodeURIComponent(url.searchParams.get('next')) : ''))}>Forgot password?</button></div></>))}
         {mode === 'reset' && <><label>New password<div className="password-wrap"><input name="password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={form.password} onChange={update} minLength="8" placeholder="At least 8 characters" required /><button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? 'Hide new password' : 'Show new password'}>{showPassword ? 'Hide' : 'Show'}</button></div></label><label>Confirm new password<div className="password-wrap"><input name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} autoComplete="new-password" value={form.confirmPassword} onChange={update} minLength="8" placeholder="Re-enter your new password" required /><button type="button" onClick={() => setShowConfirmPassword(value => !value)} aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}>{showConfirmPassword ? 'Hide' : 'Show'}</button></div></label><small className="field-help">Use at least 8 characters.</small></>}
         {error && <p className="auth-error" role="alert">{error}</p>}
-        <button className="auth-primary" type="submit" disabled={busy}>{busy ? 'Please wait…' : mode === 'register' ? 'Create account' : mode === 'forgot' ? 'Send reset code' : mode === 'reset' ? 'Save new password' : 'Log in'}</button>
+        <button className="auth-primary" type="submit" disabled={busy || (mode === 'login' && Boolean(adminChallengeToken) && adminMfaCode.length !== 6)}>{busy ? 'Please wait…' : mode === 'register' ? 'Create account' : mode === 'forgot' ? 'Send reset code' : mode === 'reset' ? 'Save new password' : adminChallengeToken ? 'Verify and continue to Admin' : 'Log in'}</button>
         {mode === 'register' && <p className="register-login-copy">Already have an account? <button type="button" onClick={() => navigate('/patient-login' + (url.searchParams.get('next') ? '?next=' + encodeURIComponent(url.searchParams.get('next')) : ''))}>Log in</button></p>}
         {mode === 'register' && <p className="terms-copy">By creating an account, you agree to the clinic’s terms and privacy notice.</p>}
       </form>}
-      {mode === 'login' && <><button type="button" className="auth-secondary login-create" onClick={() => navigate('/create-account' + (url.searchParams.get('next') ? '?next=' + encodeURIComponent(url.searchParams.get('next')) : ''))}>Create account</button></>}
+      {mode === 'login' && !adminChallengeToken && <><button type="button" className="auth-secondary login-create" onClick={() => navigate('/create-account' + (url.searchParams.get('next') ? '?next=' + encodeURIComponent(url.searchParams.get('next')) : ''))}>Create account</button></>}
     </section>
     {mode === 'reset' && passwordUpdated && <div className="password-updated-backdrop">
       <section className="password-updated-dialog" role="dialog" aria-modal="true" aria-labelledby="password-updated-title">
@@ -198,6 +217,6 @@ export default function PatientAuth({ route, navigate }) {
         </div>
       </section>
     </div>}
-    <footer className="auth-footer">© {new Date().getFullYear()} 3 Mary’s Smile Dental Clinic <span>·</span> Patient access</footer>
+    <footer className="auth-footer">© {new Date().getFullYear()} 3 Mary’s Smile Dental Clinic <span>·</span> {adminChallengeToken ? 'Admin access' : mode === 'login' ? 'Patient and admin access' : 'Patient access'}</footer>
   </main>;
 }

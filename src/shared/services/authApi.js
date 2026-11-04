@@ -14,7 +14,7 @@ async function request(path, options = {}) {
 }
 export const authApi = {
   register: async data => { const result = await request('register', { method: 'POST', body: JSON.stringify(data) }); window.dispatchEvent(new Event('patient-auth-changed')); return result; },
-  login: async data => { const result = await request('login', { method: 'POST', body: JSON.stringify(data) }); window.dispatchEvent(new Event('patient-auth-changed')); return result; },
+  login: async data => { const result = await request('login', { method: 'POST', body: JSON.stringify(data) }); if (result.user) window.dispatchEvent(new Event('patient-auth-changed')); return result; },
   logout: async () => { const result = await request('logout', { method: 'POST' }); window.dispatchEvent(new Event('patient-auth-changed')); return result; },
   session: () => request('session'),
   updateProfile: data => request('profile', { method: 'PUT', body: JSON.stringify(data) }),
