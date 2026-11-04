@@ -23,6 +23,91 @@ const healthConditions = [
   'Arthritis', 'Cancer', 'Sinusitis', 'Heart Murmur', 'Blood Disease',
   'Kidney or Bladder Problems', 'Stomach Ulcer', 'Other'
 ];
+
+const registrationDateKey = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+const parseRegistrationDate = value => {
+  const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null;
+};
+
+function BirthdayDatePicker({ id, value, invalid, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [showYears, setShowYears] = useState(false);
+  const pickerRef = useRef(null);
+  const triggerRef = useRef(null);
+  const today = new Date();
+  const todayKey = registrationDateKey(today);
+  const selectedDate = parseRegistrationDate(value);
+  const [viewMonth, setViewMonth] = useState(() => {
+    const initial = selectedDate || today;
+    return new Date(initial.getFullYear(), initial.getMonth(), 1);
+  });
+  const year = viewMonth.getFullYear();
+  const month = viewMonth.getMonth();
+  const monthLabel = viewMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  const firstWeekday = new Date(year, month, 1).getDay();
+  const days = Array.from({ length: 42 }, (_, index) => new Date(year, month, index - firstWeekday + 1));
+  const years = Array.from({ length: Math.max(1, today.getFullYear() - 1899) }, (_, index) => today.getFullYear() - index);
+  const canAdvance = new Date(year, month + 1, 1) <= new Date(today.getFullYear(), today.getMonth(), 1);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeOutside = event => { if (!pickerRef.current?.contains(event.target)) setOpen(false); };
+    const closeEscape = event => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+    document.addEventListener('pointerdown', closeOutside);
+    window.addEventListener('keydown', closeEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside);
+      window.removeEventListener('keydown', closeEscape);
+    };
+  }, [open]);
+
+  const chooseDate = date => {
+    const key = registrationDateKey(date);
+    if (key > todayKey) return;
+    onChange(key);
+    setViewMonth(new Date(date.getFullYear(), date.getMonth(), 1));
+    setShowYears(false);
+    setOpen(false);
+  };
+
+  return <div className={`registration-date-picker${open ? ' is-open' : ''}`} ref={pickerRef}>
+    <button id={id} ref={triggerRef} type="button" className={`registration-date-trigger${invalid ? ' is-invalid' : ''}`} aria-haspopup="dialog" aria-expanded={open} aria-required="true" aria-invalid={Boolean(invalid)} aria-label={`Birthday${selectedDate ? `, ${selectedDate.toLocaleDateString()}` : ', not selected'}`} onClick={() => {
+      if (!open) {
+        const initial = selectedDate || today;
+        setViewMonth(new Date(initial.getFullYear(), initial.getMonth(), 1));
+        setShowYears(false);
+      }
+      setOpen(current => !current);
+    }}>
+      <span>{selectedDate ? selectedDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Select your birthday'}</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.3"/><path d="M7.5 3.5v3M16.5 3.5v3M3.5 9.5h17M8 13h.01M12 13h.01M16 13h.01M8 16.5h.01M12 16.5h.01"/></svg>
+    </button>
+    {open && <div className="registration-date-calendar" role="dialog" aria-label="Choose birthday">
+      <div className="registration-date-calendar-header">
+        <button type="button" aria-label="Previous month" disabled={year <= 1900 && month === 0} onClick={() => setViewMonth(new Date(year, month - 1, 1))}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7"/></svg></button>
+        <button type="button" className="registration-date-calendar-title" aria-label="Choose year" onClick={() => setShowYears(current => !current)}>{monthLabel}</button>
+        <button type="button" aria-label="Next month" disabled={!canAdvance} onClick={() => setViewMonth(new Date(year, month + 1, 1))}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5 7 7-7 7"/></svg></button>
+      </div>
+      {showYears ? <div className="registration-date-years" aria-label="Choose birth year">{years.map(option => <button key={option} type="button" className={option === year ? 'is-selected' : ''} onClick={() => { setViewMonth(new Date(option, month, 1)); setShowYears(false); }}>{option}</button>)}</div> : <>
+        <div className="registration-date-weekdays" aria-hidden="true">{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => <span key={day}>{day}</span>)}</div>
+        <div className="registration-date-grid" role="grid" aria-label={monthLabel}>{days.map((date, index) => {
+          const key = registrationDateKey(date);
+          const isOutside = date.getMonth() !== month;
+          const isToday = key === todayKey;
+          const isSelected = key === value;
+          return <button key={`${key}-${index}`} type="button" role="gridcell" className={`${isOutside ? 'is-outside ' : ''}${isToday ? 'is-today ' : ''}${isSelected ? 'is-selected' : ''}`} disabled={key > todayKey} aria-label={date.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })} aria-selected={isSelected} onClick={() => chooseDate(date)}>{date.getDate()}</button>;
+        })}</div>
+        <div className="registration-date-calendar-footer"><span>Future dates are unavailable</span><button type="button" onClick={() => chooseDate(today)}>Today</button></div>
+      </>}
+    </div>}
+  </div>;
+}
 const emptyPatient = { fullName: '', address: '', phone: '', age: '', sex: '', occupation: '', weight: '', height: '', birthday: '', civilStatus: '', referredBy: '', guardianName: '', guardianPhone: '' };
 const ageFromBirthday = value => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return '';
@@ -58,6 +143,7 @@ export default function PatientRegistration({ navigate, route = '' }) {
   const [logoutError, setLogoutError] = useState('');
   const [registrationError, setRegistrationError] = useState('');
   const [savingRegistration, setSavingRegistration] = useState(false);
+  const [birthdayInvalid, setBirthdayInvalid] = useState(false);
   const headerRef = useRef(null);
   const [record, setRecord] = useState(null);
   const [mode, setMode] = useState('form');
@@ -112,7 +198,14 @@ export default function PatientRegistration({ navigate, route = '' }) {
   const submit = async event => {
     event.preventDefault();
     if (savingRegistration) return;
+    if (!patient.birthday) {
+      setBirthdayInvalid(true);
+      document.getElementById('patient-birthday')?.focus();
+      setRegistrationError('Please select a birthday before submitting your registration.');
+      return;
+    }
     setRegistrationError('');
+    setBirthdayInvalid(false);
     setSavingRegistration(true);
     const savedAnswers = patient.sex === 'Female' ? answers : { ...answers, pregnant: '', pregnancyDetails: '' };
     const registration = { patient, answers: savedAnswers, consent: true, submittedAt: new Date().toISOString() };
@@ -219,7 +312,7 @@ export default function PatientRegistration({ navigate, route = '' }) {
               <label className="registration-field">Occupation <span>*</span><input name="occupation" autoComplete="organization-title" value={patient.occupation} onChange={updatePatient} required placeholder="Your occupation"/></label>
               <label className="registration-field">Weight (kg) <small>Optional</small><input name="weight" type="number" min="1" max="500" step="0.1" value={patient.weight} onChange={updatePatient} placeholder="e.g. 60"/></label>
               <label className="registration-field">Height (cm) <small>Optional</small><input name="height" type="number" min="30" max="250" step="0.1" value={patient.height} onChange={updatePatient} placeholder="e.g. 165"/></label>
-              <label className="registration-field">Birthday <span>*</span><input name="birthday" type="date" autoComplete="bday" value={patient.birthday} onChange={updatePatient} required/></label>
+              <div className="registration-field"><label htmlFor="patient-birthday">Birthday <span>*</span></label><BirthdayDatePicker id="patient-birthday" value={patient.birthday} invalid={birthdayInvalid} onChange={value => { updatePatient({ target: { name: 'birthday', value } }); setBirthdayInvalid(false); }}/></div>
               <label className="registration-field">Civil Status <span>*</span><UserSelect required name="civilStatus" label="Civil Status" placeholder="Select civil status" value={patient.civilStatus} options={['Single', 'Married', 'Widowed', 'Separated']} onChange={value => updatePatient({ target: { name: 'civilStatus', value } })}/></label>
               <label className="registration-field registration-field-wide">Referred By <small>Optional</small><input name="referredBy" value={patient.referredBy} onChange={updatePatient} placeholder="Person or clinic that referred you"/></label>
             </div>

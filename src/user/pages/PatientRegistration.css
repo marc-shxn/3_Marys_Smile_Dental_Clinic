@@ -20,13 +20,48 @@
 .registration-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px 19px}
 .registration-field{display:block;align-content:start;color:#38564b;font-size:11px;font-weight:700}
 .registration-field>span{margin-left:4px}
+.registration-field>label{display:block}
+.registration-field>label>span{margin-left:4px;color:#c75454}
 .registration-field small{float:right;display:inline;margin:0;color:#879a92;font-size:9px;font-weight:500}
 .registration-field-wide{grid-column:1/-1}
 .registration-field input,.registration-field select,.registration-field textarea,.registration-follow-up input,.registration-follow-up textarea{box-sizing:border-box;display:block;width:100%;min-height:43px;margin-top:7px;padding:11px 12px;border:1px solid #dce7ed;border-radius:8px;background:#fff;color:#25463a;font:400 12px 'DM Sans','Segoe UI',sans-serif;outline:none;transition:border-color .16s ease,box-shadow .16s ease}
 .registration-field select{appearance:none;-webkit-appearance:none;padding-right:42px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2308754f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;background-size:15px 15px;cursor:pointer}
-.registration-field select:hover,.registration-field input[type="date"]:hover{border-color:#abd9c0}
+.registration-field select:hover,.registration-date-trigger:hover{border-color:#abd9c0}
 .registration-field select option{background:#fff;color:#25463a;font-family:'DM Sans','Segoe UI',sans-serif}
-.registration-field input[type="date"]{cursor:pointer;font-variant-numeric:tabular-nums}
+.registration-date-picker{position:relative;width:100%;min-width:0;margin-top:7px}
+.registration-date-trigger{box-sizing:border-box;display:flex;width:100%;min-height:43px;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid #dce7ed;border-radius:8px;background:#fff;color:#25463a;font:400 12px 'DM Sans','Segoe UI',sans-serif;text-align:left;cursor:pointer;transition:border-color .16s ease,box-shadow .16s ease}
+.registration-date-trigger>span{min-width:0;overflow:hidden;color:#526c60;text-overflow:ellipsis;white-space:nowrap}
+.registration-date-trigger>svg{width:17px;height:17px;flex:0 0 17px;fill:none;stroke:#658278;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.registration-date-trigger:hover,.registration-date-picker.is-open .registration-date-trigger{border-color:#9bd5b7;box-shadow:0 0 0 3px #e8f7ef}
+.registration-date-trigger:focus-visible{outline:2px solid #54a984;outline-offset:2px}
+.registration-date-trigger.is-invalid{border-color:#d85a55;background:#fffafa}
+.registration-date-calendar{position:absolute;top:calc(100% + 8px);right:0;z-index:100;width:min(296px,calc(100vw - 56px));border:1px solid #dcebe3;border-radius:14px;padding:12px;background:#fff;color:#173d34;box-shadow:0 16px 38px #17362f24;animation:registration-date-calendar-in .16s ease both}
+@keyframes registration-date-calendar-in{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.registration-date-calendar-header{display:grid;grid-template-columns:32px minmax(0,1fr) 32px;align-items:center;gap:8px;margin-bottom:10px;border-radius:10px;padding:5px;background:#f1faf5}
+.registration-date-calendar-header>button{display:grid;width:32px;height:32px;place-items:center;border:1px solid #dcebe3;border-radius:9px;background:#fff;color:#16825f;cursor:pointer}
+.registration-date-calendar-header>button:hover:not(:disabled){border-color:#a8d7bf;background:#e7f7ee}
+.registration-date-calendar-header>button:disabled{color:#b5c5bd;cursor:not-allowed}
+.registration-date-calendar-header svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.registration-date-calendar-header>.registration-date-calendar-title{display:block;width:100%;height:auto;min-width:0;border:0;background:transparent;color:#31594b;font:700 12px 'DM Sans','Segoe UI',sans-serif;text-align:center;white-space:nowrap}
+.registration-date-calendar-header>.registration-date-calendar-title:hover{background:#e7f7ee}
+.registration-date-weekdays,.registration-date-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.registration-date-weekdays{margin-bottom:4px}
+.registration-date-weekdays>span{display:grid;height:26px;place-items:center;color:#82968d;font-size:9px;font-weight:700}
+.registration-date-grid>button{display:grid;min-width:0;height:32px;place-items:center;border:1px solid transparent;border-radius:9px;padding:0;background:transparent;color:#405f53;font:500 10px 'DM Sans','Segoe UI',sans-serif;cursor:pointer;transition:background-color .14s,color .14s,border-color .14s}
+.registration-date-grid>button:hover:not(:disabled){background:#edf8f2;color:#08734f}
+.registration-date-grid>button.is-outside{color:#a7b5ad}
+.registration-date-grid>button.is-today:not(.is-selected){border-color:#a8dfca;color:#167854;font-weight:700}
+.registration-date-grid>button.is-selected{background:#16825f;color:#fff;font-weight:700}
+.registration-date-grid>button:disabled{color:#d0d9d4;cursor:not-allowed}
+.registration-date-grid>button:focus-visible,.registration-date-calendar-header>button:focus-visible,.registration-date-calendar-footer>button:focus-visible,.registration-date-years>button:focus-visible{outline:2px solid #54a984;outline-offset:1px}
+.registration-date-calendar-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;border-top:1px solid #edf3ef;padding-top:8px}
+.registration-date-calendar-footer>span{color:#82968d;font-size:9px}
+.registration-date-calendar-footer>button{min-height:29px;border:0;border-radius:8px;padding:0 10px;background:#eaf8f0;color:#167854;font:600 10px 'DM Sans','Segoe UI',sans-serif;cursor:pointer}
+.registration-date-calendar-footer>button:hover{background:#dcf3e6}
+.registration-date-years{display:grid;max-height:245px;overflow:auto;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;overscroll-behavior:contain}
+.registration-date-years>button{min-height:34px;border:1px solid transparent;border-radius:8px;background:transparent;color:#405f53;font:500 10px 'DM Sans','Segoe UI',sans-serif;cursor:pointer}
+.registration-date-years>button:hover{background:#edf8f2;color:#08734f}
+.registration-date-years>button.is-selected{background:#16825f;color:#fff;font-weight:700}
 .registration-field textarea,.registration-follow-up textarea{min-height:72px;resize:vertical;line-height:1.6}
 .registration-field input::placeholder,.registration-field textarea::placeholder,.registration-follow-up input::placeholder,.registration-follow-up textarea::placeholder{color:#a1b0b7}
 .registration-field input:focus,.registration-field select:focus,.registration-field textarea:focus,.registration-follow-up input:focus,.registration-follow-up textarea:focus{border-color:var(--registration-green);box-shadow:0 0 0 3px #dff5e8}
@@ -61,7 +96,7 @@
 .registration-home-link{display:block;margin:15px auto 0;border:0;background:none;color:#16825f;font-size:11px;font-weight:700;cursor:pointer}
 .registration-footer{margin-top:auto}
 @media(max-width:700px){.registration-nav{height:72px;padding:0 18px}.registration-nav .public-logo img{width:45px;height:45px}.registration-nav .public-brand-name b{font-size:16px}.registration-nav>.nav-login{font-size:11px}.registration-wrap{width:calc(100% - 24px);margin:20px auto 40px}.registration-heading{padding:23px 19px 20px;border-top-width:7px}.registration-heading h1{font-size:30px}.registration-heading>p,.registration-confirmation>p{font-size:12px}.registration-section-card{padding:0 16px 20px}.registration-section-heading{margin:0 -16px 17px;padding:17px 16px 14px}.registration-section-heading h2{font-size:19px}.registration-fields{grid-template-columns:1fr;gap:15px}.registration-field-wide{grid-column:auto}.registration-question-title{font-size:11px}.registration-answer-box{padding:14px 13px 12px}.registration-condition-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px 8px}.registration-check-choice{font-size:10px}.registration-submit-row{align-items:stretch;flex-direction:column;gap:12px}.registration-submit-row .site-button{width:100%}.registration-confirmation{padding:34px 20px}.registration-confirmation h1{font-size:30px}.registration-footer{display:grid;grid-template-columns:1fr;justify-items:center;text-align:center}.registration-footer>span{text-align:center}}
-@media(prefers-reduced-motion:reduce){.registration-field input,.registration-field select,.registration-field textarea,.registration-follow-up input,.registration-follow-up textarea{transition:none}}
+@media(prefers-reduced-motion:reduce){.registration-field input,.registration-field select,.registration-field textarea,.registration-follow-up input,.registration-follow-up textarea,.registration-date-trigger{transition:none}}
 .registration-record{text-align:left}
 .registration-record>.eyebrow,.registration-record>h1,.registration-record>p,.registration-record-date{text-align:center}
 .registration-record>p{margin:0 auto;max-width:600px}
