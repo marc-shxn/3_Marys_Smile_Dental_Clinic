@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://REPLACE_WITH_RENDER_SERVICE.onrender.com/api/:path*"
+      "destination": "https://three-marys-smile-dental-clinic.onrender.com/api/:path*"
     }
   ]
 }
