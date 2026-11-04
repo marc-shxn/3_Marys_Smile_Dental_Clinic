@@ -15,7 +15,7 @@ Render’s local filesystem is ephemeral unless a persistent disk is attached. A
 
 1. Create a dedicated Supabase staging project and a Render web service in an approved region. No provider, region, permanent domain, or Render service URL has been created for this project yet.
 2. In Render, use build command `npm ci && npm run build`, start command `npm start`, Node 22.13 or newer, one instance, and an attached persistent disk mounted at `/var/data`. Set `UPLOADS_DIR=/var/data/clinic`.
-3. In the Supabase Connect panel, choose the direct connection if the Render network can reach it; otherwise use the shared **session** pooler. Set `DATABASE_URL` privately in Render, not Vercel. Keep TLS enabled. The transaction pooler is not suitable for this app's explicit transactions. [Supabase connection documentation](https://supabase.com/docs/guides/database/connecting-to-postgres)
+3. In the Supabase Connect panel, choose the direct connection if the Render network can reach it; otherwise use the shared **session** pooler. Set `DATABASE_URL` privately in Render, not Vercel. Keep TLS enabled. If Node reports an untrusted certificate chain, download the Supabase server root certificate from Database Settings → SSL Configuration, base64-encode the certificate file, and set `DATABASE_SSL_CA_BASE64` in Render. Certificate verification remains enabled. The transaction pooler is not suitable for this app's explicit transactions. [Supabase connection documentation](https://supabase.com/docs/guides/database/connecting-to-postgres)
 4. In a trusted operator environment, set `DATABASE_URL` and run `npm run db:migrate`. Confirm all migrations are recorded. Do not put database credentials in the frontend project.
 5. Configure Render secrets and variables listed below. Configure Resend or SMTP for a dedicated test mailbox. Set a staging Roboflow key only if using synthetic images in its service.
 6. Deploy the frontend to Vercel and replace the Render URL in `vercel.json`; redeploy. Check a patient API call and an admin API call from the Vercel site and confirm session cookies are `Secure`, `HttpOnly`, and `SameSite=Lax`.
@@ -29,7 +29,8 @@ Render’s local filesystem is ephemeral unless a persistent disk is attached. A
 | `NODE_ENV` | Yes | Render: `production`. |
 | `PORT`, `HOST` | Render-provided | App defaults to `8787` and `0.0.0.0`. |
 | `DATABASE_URL` | Yes | Render secret. Direct or session-pooler PostgreSQL connection URL. |
-| `DATABASE_SSL` | Yes | Keep `require`; only set `disable` for a trusted local development database. |
+| `DATABASE_SSL` | Yes | TLS and certificate verification are enabled by default. Only set `disable` for a trusted local development database; never disable it on Render. |
+| `DATABASE_SSL_CA_BASE64` | Optional | Base64-encoded Supabase server root certificate for runtimes that do not trust the presented certificate chain. Certificate verification remains enabled. |
 | `PG_POOL_MAX` | Optional | Default `8`, per backend instance. |
 | `UPLOADS_DIR` | Yes | `/var/data/clinic`, inside the attached persistent disk. |
 | `REQUIRE_HTTPS`, `TRUST_PROXY` | Yes | Set both `true`; keep the app behind Render’s HTTPS proxy. |

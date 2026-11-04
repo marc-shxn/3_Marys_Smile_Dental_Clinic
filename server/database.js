@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { Buffer } from 'node:buffer';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 const { Pool } = pg;
@@ -116,12 +117,29 @@ function databaseFor(executor) {
 
 export function createDatabase(connectionString = process.env.DATABASE_URL) {
   if (!String(connectionString || '').trim()) throw new Error('DATABASE_URL must contain a Supabase PostgreSQL connection string.');
+  const encodedCa = String(process.env.DATABASE_SSL_CA_BASE64 || '').replace(/\s+/g, '');
+  let ssl;
+  if (process.env.DATABASE_SSL === 'disable') {
+    ssl = false;
+  } else if (encodedCa) {
+    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(encodedCa)) {
+      throw new Error('DATABASE_SSL_CA_BASE64 must be a base64-encoded PEM certificate.');
+    }
+    const ca = Buffer.from(encodedCa, 'base64');
+    const pem = ca.toString('utf8');
+    if (!pem.includes('-----BEGIN CERTIFICATE-----') || !pem.includes('-----END CERTIFICATE-----')) {
+      throw new Error('DATABASE_SSL_CA_BASE64 must decode to a PEM certificate.');
+    }
+    ssl = { rejectUnauthorized: true, ca: pem };
+  } else {
+    ssl = { rejectUnauthorized: true };
+  }
   const pool = new Pool({
     connectionString,
     max: Math.max(1, Number(process.env.PG_POOL_MAX) || 8),
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 10_000,
-    ssl: process.env.DATABASE_SSL === 'disable' ? false : { rejectUnauthorized: true },
+    ssl,
     application_name: 'marys-smile-api',
   });
   pool.on('error', error => console.error('Idle PostgreSQL connection error:', error.message));

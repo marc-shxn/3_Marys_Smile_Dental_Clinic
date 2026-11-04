@@ -15,7 +15,8 @@ Set these in Render’s private environment settings. Do not send database crede
 | Variable | Use |
 | --- | --- |
 | `DATABASE_URL` | Required PostgreSQL connection string; keep it on Render only. |
-| `DATABASE_SSL` | `require` by default. `disable` is only for a trusted local database. |
+| `DATABASE_SSL` | TLS and certificate verification are enabled by default. `disable` is only for a trusted local database; never disable it on Render. |
+| `DATABASE_SSL_CA_BASE64` | Optional base64-encoded Supabase server root certificate when the runtime does not trust the presented certificate chain. Verification stays enabled. |
 | `PG_POOL_MAX` | Per-instance PostgreSQL pool limit; default is 8. |
 | `UPLOADS_DIR` | Required path on Render’s attached persistent disk. |
 | `SUPABASE_URL` | Optional identifier; current server does not use the HTTP Data API. |
