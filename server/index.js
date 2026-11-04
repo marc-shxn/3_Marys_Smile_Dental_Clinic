@@ -751,7 +751,9 @@ async function handle(req, res) {
       (await db.prepare('INSERT INTO patients (patient_id, clinic_id, account_id, full_name, email, phone, date_of_birth, gender, address, patient_number, first_name, last_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(patientId, 'default-clinic', accountId, fullName, email, phone || null, dateOfBirth || null, gender || null, address || null, patientNumber, firstName, lastName));
       (await db.exec('COMMIT'));
     } catch (error) {
-      (await db.exec('ROLLBACK'));
+      try { (await db.exec('ROLLBACK')); } catch (rollbackError) {
+        console.error('Patient registration transaction rollback failed:', rollbackError.message);
+      }
       if (error.code === '23505' || String(error.message).includes('UNIQUE')) return json(res, 409, { error: 'An account with that email already exists.' });
       throw error;
     }

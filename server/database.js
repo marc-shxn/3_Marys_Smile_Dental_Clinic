@@ -71,11 +71,13 @@ function databaseFor(executor) {
       const command = String(sql).trim().replace(/;+$/, '').trim().toUpperCase();
       const current = transactions.getStore();
       if (/^BEGIN(?:\s|$)/.test(command)) {
+        if (!current) throw new Error('A transaction requires an active request context.');
+        if (current.client) throw new Error('Nested transactions are not supported.');
         if (!executor.connect) throw new Error('A transaction cannot be started from a transaction client.');
         const client = await executor.connect();
         try {
           await client.query('BEGIN');
-          transactions.enterWith({ client });
+          current.client = client;
         } catch (error) {
           client.release();
           throw error;
@@ -84,11 +86,12 @@ function databaseFor(executor) {
       }
       if (command === 'COMMIT' || command === 'ROLLBACK') {
         if (!current?.client) throw new Error(`Cannot ${command.toLowerCase()} outside a transaction.`);
+        const client = current.client;
         try {
-          await current.client.query(command);
+          await client.query(command);
         } finally {
-          current.client.release();
-          transactions.enterWith(null);
+          current.client = null;
+          client.release();
         }
         return;
       }
@@ -144,7 +147,7 @@ export function createDatabase(connectionString = process.env.DATABASE_URL) {
   });
   pool.on('error', error => console.error('Idle PostgreSQL connection error:', error.message));
   const database = databaseFor(pool);
-  database.withContext = callback => transactions.run(null, callback);
+  database.withContext = callback => transactions.run({ client: null }, callback);
   return database;
 }
 
