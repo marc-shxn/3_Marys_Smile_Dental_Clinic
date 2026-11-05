@@ -13,10 +13,8 @@ dist
 /.build-check*/
 dist-ssr
 *.local
-.env
-.env.*
-!.env.example
-!.env.staging.example
+# Ignore every dotenv file, including sample/staging variants. Keep secrets out of Git.
+.env*
 
 # Editor directories and files
 .vscode/*
@@ -32,13 +30,6 @@ dist-ssr
 # Runtime state, local databases, and patient uploads must never be committed.
 /server/data/
 server/backups/
-
-# Environment Variables
-.env
-.env.local
-
-.env.development
-.env.production
 
 # Dependencies
 node_modules

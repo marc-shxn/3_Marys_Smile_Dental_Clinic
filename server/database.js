@@ -145,7 +145,7 @@ export function createDatabase(connectionString = process.env.DATABASE_URL) {
     ssl,
     application_name: 'marys-smile-api',
   });
-  pool.on('error', error => console.error('Idle PostgreSQL connection error:', error.message));
+  pool.on('error', error => console.error('Idle PostgreSQL connection error:', error.code || error.name || 'database_error'));
   const database = databaseFor(pool);
   database.withContext = callback => transactions.run({ client: null }, callback);
   return database;
