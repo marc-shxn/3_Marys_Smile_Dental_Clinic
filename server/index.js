@@ -2,7 +2,7 @@ import process from 'node:process';
 import { Buffer } from 'node:buffer';
 import { createServer } from 'node:http';
 import { isIP } from 'node:net';
-import { randomBytes, randomUUID, randomInt, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
+import { randomBytes, randomUUID, randomInt, scryptSync, timingSafeEqual, createHash, createHmac } from 'node:crypto';
 import { createReadStream, mkdirSync, readFileSync, writeFileSync, rmSync, existsSync, lstatSync, chmodSync, rmdirSync } from 'node:fs';
 import { dirname, extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,7 +24,7 @@ if (productionMode) chmodSync(dataDir, 0o700);
 const db = createDatabase();
 const schemaState = (await db.prepare("SELECT to_regclass('public.patient_accounts') AS patient_accounts").get());
 if (!schemaState?.patient_accounts) throw new Error('Supabase schema is missing. Run npm run db:migrate before starting the backend.');
-(await db.exec('DELETE FROM auth_sessions WHERE expires_at <= FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP))::bigint; DELETE FROM admin_sessions WHERE expires_at <= FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP))::bigint; DELETE FROM password_reset_tokens WHERE expires_at <= FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP))::bigint OR used_at IS NOT NULL; DELETE FROM email_verification_tokens WHERE expires_at <= FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP))::bigint OR used_at IS NOT NULL; DELETE FROM admin_mfa_challenges WHERE expires_at <= FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP))::bigint OR used_at IS NOT NULL;'));
+(await db.exec('DELETE FROM auth_sessions WHERE expires_at <= FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP))::bigint; DELETE FROM admin_sessions WHERE expires_at <= FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP))::bigint; DELETE FROM password_reset_tokens WHERE expires_at <= FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP))::bigint OR used_at IS NOT NULL; DELETE FROM email_verification_tokens WHERE expires_at <= FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP))::bigint OR used_at IS NOT NULL; DELETE FROM phone_verification_tokens WHERE expires_at <= FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP))::bigint OR used_at IS NOT NULL; DELETE FROM admin_mfa_challenges WHERE expires_at <= FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP))::bigint OR used_at IS NOT NULL;'));
 
 if (productionMode) {
   assertProductionMailConfigured();
@@ -238,6 +238,7 @@ function serveFrontend(req, res, pathname) {
   return true;
 }
 const hashToken = token => createHash('sha256').update(token).digest('hex');
+const securityHash = value => createHmac('sha256', String(process.env.DATABASE_URL || 'local-development-only')).update(String(value)).digest('hex');
 const normalizeEmail = value => String(value || '').trim().toLowerCase();
 const stripControlChars = value => Array.from(String(value || '')).filter(character => {
   const code = character.charCodeAt(0);
@@ -281,12 +282,66 @@ function readCookie(req, name) {
   return entry ? decodeURIComponent(entry.slice(name.length + 1)) : '';
 }
 async function readBody(req, maxBytes = 20000) {
-  let raw = '';
+  const chunks = [];
+  let byteLength = 0;
   for await (const part of req) {
-    raw += part;
-    if (raw.length > maxBytes) throw Object.assign(new Error('Request is too large.'), { status: 413 });
+    const chunk = Buffer.isBuffer(part) ? part : Buffer.from(part);
+    byteLength += chunk.length;
+    if (byteLength > maxBytes) throw Object.assign(new Error('Request is too large.'), { status: 413 });
+    chunks.push(chunk);
   }
-  try { return raw ? JSON.parse(raw) : {}; } catch { throw Object.assign(new Error('Invalid JSON request.'), { status: 400 }); }
+  let body;
+  try { body = byteLength ? JSON.parse(Buffer.concat(chunks, byteLength).toString('utf8')) : {}; }
+  catch { throw Object.assign(new Error('Invalid JSON request.'), { status: 400 }); }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) throw Object.assign(new Error('The request must contain a JSON object.'), { status: 400 });
+  return body;
+}
+function imageDimensions(buffer, mimeType) {
+  if (mimeType === 'image/png' && buffer.length >= 24
+    && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+    && buffer.toString('ascii', 12, 16) === 'IHDR') {
+    return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+  }
+  if (mimeType === 'image/jpeg' && buffer.length >= 4 && buffer[0] === 0xff && buffer[1] === 0xd8) {
+    const frameMarkers = new Set([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf]);
+    let offset = 2;
+    while (offset + 4 <= buffer.length) {
+      if (buffer[offset] !== 0xff) { offset += 1; continue; }
+      while (buffer[offset] === 0xff) offset += 1;
+      const marker = buffer[offset++];
+      if (marker === 0x00) continue;
+      if (marker === 0xd9 || marker === 0xda) break;
+      if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) continue;
+      if (offset + 2 > buffer.length) return null;
+      const segmentLength = buffer.readUInt16BE(offset);
+      if (segmentLength < 2 || offset + segmentLength > buffer.length) return null;
+      if (frameMarkers.has(marker)) {
+        if (segmentLength < 7) return null;
+        return { height: buffer.readUInt16BE(offset + 3), width: buffer.readUInt16BE(offset + 5) };
+      }
+      offset += segmentLength;
+    }
+  }
+  if (mimeType === 'image/webp' && buffer.length >= 30
+    && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') {
+    const chunk = buffer.toString('ascii', 12, 16);
+    if (chunk === 'VP8X') {
+      return {
+        width: 1 + buffer[24] + (buffer[25] << 8) + (buffer[26] << 16),
+        height: 1 + buffer[27] + (buffer[28] << 8) + (buffer[29] << 16),
+      };
+    }
+    if (chunk === 'VP8L' && buffer.length >= 25 && buffer[20] === 0x2f) {
+      return {
+        width: 1 + buffer[21] + ((buffer[22] & 0x3f) << 8),
+        height: 1 + (buffer[22] >> 6) + (buffer[23] << 2) + ((buffer[24] & 0x0f) << 10),
+      };
+    }
+    if (chunk === 'VP8 ' && buffer.length >= 30 && buffer[23] === 0x9d && buffer[24] === 0x01 && buffer[25] === 0x2a) {
+      return { width: buffer.readUInt16LE(26) & 0x3fff, height: buffer.readUInt16LE(28) & 0x3fff };
+    }
+  }
+  return null;
 }
 function passwordHash(password, salt = randomBytes(16).toString('hex')) {
   return { salt, hash: scryptSync(password, salt, 64).toString('hex') };
@@ -299,24 +354,34 @@ function verifyHash(value, salt, expected) {
 async function accountForSession(req) {
   const token = readCookie(req, 'clinic_session');
   if (!token) return null;
-  return (await db.prepare('SELECT a.account_id, a.full_name, a.email, a.phone, p.patient_number FROM auth_sessions s JOIN patient_accounts a ON a.account_id=s.account_id LEFT JOIN patients p ON p.account_id=a.account_id WHERE s.token_hash=? AND s.expires_at>unixepoch() AND a.email_verified_at IS NOT NULL').get(hashToken(token))) || null;
+  const row = (await db.prepare('SELECT s.session_id, a.account_id, a.full_name, a.email, a.phone, p.patient_number FROM auth_sessions s JOIN patient_accounts a ON a.account_id=s.account_id LEFT JOIN patients p ON p.account_id=a.account_id WHERE s.token_hash=? AND s.expires_at>unixepoch() AND a.email_verified_at IS NOT NULL').get(hashToken(token)));
+  if (!row) return null;
+  // Sliding expiry makes the seven-day limit an idle timeout as well as a token lifetime.
+  const expiresAt = Math.floor(Date.now() / 1000) + sessionSeconds;
+  (await db.prepare('UPDATE auth_sessions SET expires_at=? WHERE session_id=?').run(expiresAt, row.session_id));
+  req.clinicResponse?.setHeader('Set-Cookie', sessionCookie(token));
+  return row;
 }
 async function adminForSession(req) {
   const token = readCookie(req, 'clinic_admin_session');
   if (!token) return null;
-  return (await db.prepare(`SELECT a.admin_id, a.full_name, a.email, a.phone, a.role
+  const row = (await db.prepare(`SELECT s.session_id, a.admin_id, a.full_name, a.email, a.phone, a.role
     FROM admin_sessions s JOIN admin_users a ON a.admin_id=s.admin_id
-    WHERE s.token_hash=? AND s.expires_at>unixepoch() AND a.is_active=1`).get(hashToken(token))) || null;
+    WHERE s.token_hash=? AND s.expires_at>unixepoch() AND a.is_active=1 AND a.role='admin'`).get(hashToken(token)));
+  if (!row) return null;
+  (await db.prepare('UPDATE admin_sessions SET expires_at=? WHERE session_id=?').run(Math.floor(Date.now() / 1000) + sessionSeconds, row.session_id));
+  req.clinicResponse?.setHeader('Set-Cookie', adminSessionCookie(token));
+  return row;
 }
 const publicAdmin = admin => ({ id: admin.admin_id, name: admin.full_name, email: admin.email, phone: admin.phone || '', role: admin.role });
-const throttleKeyColumns = { admin_login_throttles: 'email_hash', patient_login_throttles: 'email_hash', password_reset_throttles: 'email_hash', email_verification_throttles: 'email_hash', ip_login_throttles: 'ip_hash' };
+const throttleKeyColumns = { admin_login_throttles: 'email_hash', patient_login_throttles: 'email_hash', password_reset_throttles: 'email_hash', email_verification_throttles: 'email_hash', phone_signup_ip_throttles: 'ip_hash', ip_login_throttles: 'ip_hash' };
 function throttleKeyColumn(table) {
   const column = throttleKeyColumns[table];
   if (!column) throw new Error('Unknown login throttle table.');
   return column;
 }
 async function isRateLimited(table, email) {
-  const emailHash = hashToken(normalizeEmail(email));
+  const emailHash = securityHash(normalizeEmail(email));
   const keyColumn = throttleKeyColumn(table);
   const record = (await db.prepare(`SELECT failures, blocked_until, unixepoch(updated_at) AS updated_epoch FROM ${table} WHERE ${keyColumn}=?`).get(emailHash));
   const now = Math.floor(Date.now() / 1000);
@@ -325,7 +390,7 @@ async function isRateLimited(table, email) {
   return false;
 }
 async function recordFailedAttempt(table, email, limit, windowSeconds) {
-  const emailHash = hashToken(normalizeEmail(email));
+  const emailHash = securityHash(normalizeEmail(email));
   const keyColumn = throttleKeyColumn(table);
   const now = Math.floor(Date.now() / 1000);
   const record = (await db.prepare(`SELECT failures, blocked_until, unixepoch(updated_at) AS updated_epoch FROM ${table} WHERE ${keyColumn}=?`).get(emailHash));
@@ -338,15 +403,43 @@ async function recordFailedAttempt(table, email, limit, windowSeconds) {
   return blockedUntil > now;
 }
 async function clearFailedAttempts(table, email) {
-  (await db.prepare(`DELETE FROM ${table} WHERE ${throttleKeyColumn(table)}=?`).run(hashToken(normalizeEmail(email))));
+  (await db.prepare(`DELETE FROM ${table} WHERE ${throttleKeyColumn(table)}=?`).run(securityHash(normalizeEmail(email))));
 }
 function clientIp(req) {
-  const forwarded = process.env.TRUST_PROXY === 'true' ? String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() : '';
+  // With one trusted reverse proxy, use the rightmost forwarded address so a
+  // client-supplied leftmost X-Forwarded-For value cannot bypass IP throttles.
+  const forwarded = process.env.TRUST_PROXY === 'true'
+    ? String(req.headers['x-forwarded-for'] || '').split(',').map(value => value.trim()).filter(Boolean).at(-1) || ''
+    : '';
   const candidate = forwarded || req.socket.remoteAddress || 'unknown';
   return isIP(candidate) ? candidate.toLowerCase() : 'unknown';
 }
 function loginIpKey(req, scope) {
   return `${scope}:ip:${clientIp(req)}`;
+}
+function securityRoute(req) {
+  return new URL(req.url || '/', 'http://localhost').pathname
+    .replace(/\/(?:[\w-]{24,})/g, '/:id')
+    .slice(0, 200);
+}
+async function recordSecurityEvent(req, eventType, { subject = '', statusCode = 401 } = {}) {
+  const event = {
+    eventId: randomUUID(),
+    eventType: String(eventType).slice(0, 80),
+    subjectHash: subject ? securityHash(normalizeEmail(subject)) : null,
+    ipHash: securityHash(clientIp(req)),
+    httpMethod: String(req.method || 'GET').slice(0, 12),
+    route: securityRoute(req),
+    statusCode: Number(statusCode) || 0,
+  };
+  console.warn(`[security] ${JSON.stringify(event)}`);
+  try {
+    (await db.prepare(`INSERT INTO security_events (event_id, event_type, subject_hash, ip_hash, http_method, route, status_code)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`).run(event.eventId, event.eventType, event.subjectHash, event.ipHash, event.httpMethod, event.route, event.statusCode));
+  } catch (error) {
+    // Keep the event in provider logs if the security table has not been migrated yet.
+    console.warn('[security] persistent event write failed:', error.code || error.name || 'database_error');
+  }
 }
 async function issueAdminSession(req, account) {
   (await db.prepare('DELETE FROM admin_sessions WHERE admin_id=? AND expires_at<=unixepoch()').run(account.admin_id));
@@ -375,10 +468,44 @@ async function issueEmailVerification(accountId, email) {
     });
     return { verificationSent: true };
   } catch (error) {
-    console.error('Patient email verification message could not be sent:', error.message);
+    console.error('Patient email verification message could not be sent:', error.code || error.name || 'mail_error');
     return { verificationSent: false };
   }
 }
+function normalizePhone(value) {
+  return String(value || '').trim().replace(/[\s().-]/g, '');
+}
+function isE164Phone(value) {
+  return /^\+[1-9]\d{7,14}$/.test(value);
+}
+/* Future Textbee SMS verification adapter. Kept disabled while patient verification is email-only.
+import { sendSms } from './sms.js';
+async function issuePhoneVerification(accountId, email, phone) {
+  if (productionMode && !String(process.env.TEXTBEE_API_KEY || '').trim()) {
+    console.error('Patient phone verification is unavailable because TEXTBEE_API_KEY is not configured.');
+    return { phoneVerificationSent: false };
+  }
+  if (productionMode && (await isRateLimited('phone_number_verification_throttles', phone))) return { phoneVerificationSent: false };
+  if (productionMode && (await recordFailedAttempt('phone_number_verification_throttles', phone, 6, 60 * 60))) return { phoneVerificationSent: false };
+  const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+  const credentials = passwordHash(code);
+  const verificationId = randomUUID();
+  (await db.prepare('DELETE FROM phone_verification_tokens WHERE account_id=? AND used_at IS NULL').run(accountId));
+  (await db.prepare('INSERT INTO phone_verification_tokens (verification_id, account_id, code_hash, code_salt, expires_at) VALUES (?, ?, ?, ?, ?)')
+    .run(verificationId, accountId, credentials.hash, credentials.salt, Math.floor(Date.now() / 1000) + 30 * 60));
+  if (!productionMode) return { phoneVerificationCode: code };
+  try {
+    await sendSms({
+      to: phone,
+      text: `3 Marys Smile code: ${code}. Expires in 30 min. If you did not request it, ignore this text.`,
+    });
+    return { phoneVerificationSent: true };
+  } catch (error) {
+    console.error('Patient phone verification message could not be sent:', error.message);
+    return { phoneVerificationSent: false };
+  }
+}
+*/
 async function queueAssessmentFiles(targetDb, patientId, assessmentId = null) {
   const rows = assessmentId
     ? (await targetDb.prepare('SELECT i.storage_path FROM oral_assessment_images i JOIN oral_assessments a ON a.assessment_id=i.assessment_id WHERE a.patient_id=? AND a.assessment_id=?').all(patientId, assessmentId))
@@ -439,7 +566,7 @@ async function flushPendingFileDeletions() {
       }
       (await db.prepare('DELETE FROM pending_file_deletions WHERE relative_path=?').run(row.relative_path));
     } catch (error) {
-      console.error('Assessment file deletion is pending operator review:', error.message);
+      console.error('Assessment file deletion is pending operator review:', error.code || error.name || 'file_error');
     }
   }
 }
@@ -455,11 +582,20 @@ function auditAdminRequest(req, res) {
       (await db.prepare('INSERT INTO admin_activity_log (activity_id, admin_id, event_type, http_method, route, status_code) VALUES (?, ?, ?, ?, ?, ?)')
         .run(randomUUID(), adminId, `${req.method} ${path}`, req.method || 'GET', path.slice(0, 200), res.statusCode));
       (await db.prepare("DELETE FROM admin_activity_log WHERE NULLIF(created_at, '')::timestamptz < CURRENT_TIMESTAMP - INTERVAL '180 days'").run());
-    } catch (error) { console.error('Admin activity event could not be recorded:', error.message); }
+    } catch (error) { console.error('Admin activity event could not be recorded:', error.code || error.name || 'database_error'); }
   });
 }
 (await flushPendingFileDeletions());
-setInterval(() => flushPendingFileDeletions().catch(error => console.error('Assessment file cleanup could not run:', error.message)), 60_000).unref();
+setInterval(() => flushPendingFileDeletions().catch(error => console.error('Assessment file cleanup could not run:', error.code || error.name || 'file_error')), 60_000).unref();
+async function purgeOldSecurityEvents() {
+  try {
+    (await db.prepare("DELETE FROM security_events WHERE NULLIF(created_at, '')::timestamptz < CURRENT_TIMESTAMP - INTERVAL '180 days'").run());
+  } catch (error) {
+    console.error('Security event retention cleanup could not run:', error.code || error.name || 'database_error');
+  }
+}
+await purgeOldSecurityEvents();
+setInterval(purgeOldSecurityEvents, 24 * 60 * 60 * 1000).unref();
 async function ensurePatientNumber(account) {
   if (account.patient_number) return account;
   (await db.exec('BEGIN IMMEDIATE'));
@@ -482,17 +618,23 @@ async function ensurePatientNumber(account) {
 }
 async function loginAdmin(req, res, email, password, { exposeSetupError = true } = {}) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || password.length > 256) {
+    await recordSecurityEvent(req, 'admin.login_rejected', { subject: email, statusCode: 401 });
     return json(res, 401, { error: 'Email or password is incorrect.' });
   }
   if (!(await db.prepare('SELECT 1 FROM admin_users LIMIT 1').get())) {
+    if (!exposeSetupError) await recordSecurityEvent(req, 'admin.login_failed', { subject: email, statusCode: 401 });
     return exposeSetupError
       ? json(res, 503, { error: 'No admin account is set up yet. Run npm run admin:create on the clinic server first.' })
       : json(res, 401, { error: 'Email or password is incorrect.' });
   }
   const ipKey = loginIpKey(req, 'admin');
-  if ((await isRateLimited('admin_login_throttles', email)) || (await isRateLimited('ip_login_throttles', ipKey))) return json(res, 429, { error: 'Too many sign-in attempts. Try again in 15 minutes.' });
+  if ((await isRateLimited('admin_login_throttles', email)) || (await isRateLimited('ip_login_throttles', ipKey))) {
+    await recordSecurityEvent(req, 'admin.login_rate_limited', { subject: email, statusCode: 429 });
+    return json(res, 429, { error: 'Too many sign-in attempts. Try again in 15 minutes.' });
+  }
   const account = (await db.prepare('SELECT admin_id, full_name, email, phone, role, password_hash, password_salt, mfa_secret_ciphertext, mfa_secret_iv, mfa_secret_tag, mfa_enabled_at, mfa_last_totp_step FROM admin_users WHERE email=? AND is_active=1').get(email));
   if (!account || !verifyHash(password, account.password_salt, account.password_hash)) {
+    await recordSecurityEvent(req, 'admin.login_failed', { subject: email, statusCode: 401 });
     const blocked = (await recordFailedAttempt('admin_login_throttles', email, 10, 15 * 60));
     const ipBlocked = (await recordFailedAttempt('ip_login_throttles', ipKey, 40, 15 * 60));
     const limited = blocked || ipBlocked;
@@ -531,17 +673,24 @@ async function handle(req, res) {
     const challengeToken = String(body.challengeToken || '');
     const code = String(body.code || '');
     const ipKey = loginIpKey(req, 'admin');
-    if ((await isRateLimited('ip_login_throttles', ipKey))) return json(res, 429, { error: 'Too many sign-in attempts. Try again in 15 minutes.' });
+    if ((await isRateLimited('ip_login_throttles', ipKey))) {
+      await recordSecurityEvent(req, 'admin.mfa_rate_limited', { statusCode: 429 });
+      return json(res, 429, { error: 'Too many sign-in attempts. Try again in 15 minutes.' });
+    }
     const challenge = (await db.prepare(`SELECT c.challenge_id, c.admin_id, c.attempts, a.full_name, a.email, a.phone, a.role,
       a.mfa_secret_ciphertext, a.mfa_secret_iv, a.mfa_secret_tag, a.mfa_enabled_at, a.mfa_last_totp_step
       FROM admin_mfa_challenges c JOIN admin_users a ON a.admin_id=c.admin_id
       WHERE c.token_hash=? AND c.expires_at>unixepoch() AND c.used_at IS NULL AND a.is_active=1`)
       .get(hashToken(challengeToken)));
-    if (!challenge || challenge.attempts >= 5 || !challenge.mfa_enabled_at) return json(res, 401, { error: 'The authenticator code is invalid or expired.' });
+    if (!challenge || challenge.attempts >= 5 || !challenge.mfa_enabled_at) {
+      await recordSecurityEvent(req, 'admin.mfa_rejected', { statusCode: 401 });
+      return json(res, 401, { error: 'The authenticator code is invalid or expired.' });
+    }
     let matchingStep = null;
     try { matchingStep = matchingTotpStep(decryptTotpSecret(challenge), code); }
-    catch (error) { console.error('Admin MFA secret could not be read:', error.message); }
+    catch (error) { console.error('Admin MFA secret could not be read:', error.code || error.name || 'mfa_error'); }
     if (matchingStep === null || matchingStep <= Number(challenge.mfa_last_totp_step ?? -1)) {
+      await recordSecurityEvent(req, 'admin.mfa_failed', { subject: challenge.email, statusCode: 401 });
       (await db.prepare('UPDATE admin_mfa_challenges SET attempts=attempts+1 WHERE challenge_id=?').run(challenge.challenge_id));
       (await recordFailedAttempt('ip_login_throttles', ipKey, 40, 15 * 60));
       return json(res, 401, { error: 'The authenticator code is invalid or expired.' });
@@ -560,13 +709,24 @@ async function handle(req, res) {
   }
   if (url.pathname.startsWith('/api/admin/')) {
     const admin = (await adminForSession(req));
-    if (!admin) return json(res, 401, { error: 'Sign in to the clinic admin account to continue.', code: 'ADMIN_SESSION_REQUIRED' }, { 'Set-Cookie': adminCookieExpiry(0) });
+    if (!admin) {
+      const patient = await accountForSession(req);
+      const statusCode = patient ? 403 : 401;
+      await recordSecurityEvent(req, patient ? 'patient.admin_access_denied' : 'admin.access_denied', { subject: patient?.email || '', statusCode });
+      if (patient) return json(res, 403, { error: 'You do not have permission to access this resource.' }, { 'Set-Cookie': adminCookieExpiry(0) });
+      return json(res, 401, { error: 'Sign in to the clinic admin account to continue.', code: 'ADMIN_SESSION_REQUIRED' }, { 'Set-Cookie': adminCookieExpiry(0) });
+    }
     req.adminUser = admin;
     if (req.method === 'GET' && url.pathname === '/api/admin/auth/session') return json(res, 200, { admin: publicAdmin(admin) });
     if (req.method === 'GET' && url.pathname === '/api/admin/auth/activity') {
       const activities = (await db.prepare(`SELECT event_type AS eventType, http_method AS method, route, status_code AS statusCode, created_at AS createdAt
         FROM admin_activity_log WHERE admin_id=? ORDER BY created_at DESC LIMIT 100`).all(admin.admin_id));
       return json(res, 200, { activities });
+    }
+    if (req.method === 'GET' && url.pathname === '/api/admin/auth/security-events') {
+      const events = (await db.prepare(`SELECT event_type AS eventType, http_method AS method, route, status_code AS statusCode, created_at AS createdAt
+        FROM security_events ORDER BY created_at DESC LIMIT 100`).all());
+      return json(res, 200, { events });
     }
     if (req.method === 'PUT' && url.pathname === '/api/admin/auth/profile') {
       const body = await readBody(req);
@@ -730,37 +890,52 @@ async function handle(req, res) {
 
   if (req.method === 'POST' && url.pathname === '/api/auth/register') {
     const body = await readBody(req);
-    const firstName = formatPersonName(body.firstName);
-    const middleName = formatPersonName(body.middleName);
-    const lastName = formatPersonName(body.lastName);
-    const fullName = formatPersonName(body.fullName || [firstName, middleName, lastName].filter(Boolean).join(' '));
+    const firstName = formatPersonName(stripControlChars(body.firstName));
+    const middleName = formatPersonName(stripControlChars(body.middleName));
+    const lastName = formatPersonName(stripControlChars(body.lastName));
+    const fullName = formatPersonName(stripControlChars(body.fullName || [firstName, middleName, lastName].filter(Boolean).join(' ')));
     const email = normalizeEmail(body.email);
-    const phone = String(body.phone || '').trim();
+    const phone = normalizePhone(body.phone);
     const dateOfBirth = String(body.dateOfBirth || '').trim();
-    const gender = String(body.gender || '').trim();
-    const address = String(body.address || '').trim();
+    const gender = stripControlChars(body.gender).trim();
+    const address = stripControlChars(body.address).trim();
     const password = String(body.password || '');
     if (firstName.length < 1 || lastName.length < 1 || fullName.length < 2) return json(res, 400, { error: 'Enter your first and last name.' });
+    if (firstName.length > 80 || middleName.length > 80 || lastName.length > 80 || fullName.length > 200 || address.length > 500 || gender.length > 24) {
+      return json(res, 400, { error: 'Some account details are too long. Please review the name and contact fields.' });
+    }
     if (!isGmailAddress(email)) return json(res, 400, { error: 'Enter a valid Gmail address ending in @gmail.com.' });
-    if (phone && !/^\+?[\d\s().-]{7,20}$/.test(phone)) return json(res, 400, { error: 'Enter a valid phone number, or leave it blank.' });
-    if (password.length < 8) return json(res, 400, { error: 'Use a password with at least 8 characters.' });
+    if (phone && !isE164Phone(phone)) return json(res, 400, { error: 'Enter a valid phone number in international format, including + and the country code.' });
+    if (password.length < 8 || password.length > 256) return json(res, 400, { error: 'Use a password between 8 and 256 characters.' });
+    if (dateOfBirth && (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)
+      || !Number.isFinite(Date.parse(`${dateOfBirth}T00:00:00Z`))
+      || new Date(`${dateOfBirth}T00:00:00Z`).toISOString().slice(0, 10) !== dateOfBirth
+      || Date.parse(`${dateOfBirth}T00:00:00Z`) > Date.now())) return json(res, 400, { error: 'Enter a valid date of birth.' });
+    const signupIpKey = loginIpKey(req, 'patient-signup');
+    if ((await isRateLimited('phone_signup_ip_throttles', signupIpKey)) || (await recordFailedAttempt('phone_signup_ip_throttles', signupIpKey, 6, 60 * 60))) {
+      await recordSecurityEvent(req, 'patient.signup_rate_limited', { subject: email, statusCode: 429 });
+      return json(res, 429, { error: 'Too many signup attempts. Please try again later.' });
+    }
     const credentials = passwordHash(password);
     const accountId = randomUUID();
     const patientId = randomUUID();
     const patientNumber = (await nextPatientNumber());
     try {
       (await db.exec('BEGIN'));
-      (await db.prepare('INSERT INTO patient_accounts (account_id, full_name, first_name, middle_name, last_name, email, phone, date_of_birth, gender, address, password_hash, password_salt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(accountId, fullName, firstName, middleName || null, lastName, email, phone, dateOfBirth || '', gender || '', address || null, credentials.hash, credentials.salt));
+      (await db.prepare('INSERT INTO patient_accounts (account_id, full_name, first_name, middle_name, last_name, email, phone, date_of_birth, gender, address, password_hash, password_salt, phone_verification_required) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, FALSE)').run(accountId, fullName, firstName, middleName || null, lastName, email, phone, dateOfBirth || '', gender || '', address || null, credentials.hash, credentials.salt));
       (await db.prepare('INSERT INTO patients (patient_id, clinic_id, account_id, full_name, email, phone, date_of_birth, gender, address, patient_number, first_name, last_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(patientId, 'default-clinic', accountId, fullName, email, phone || null, dateOfBirth || null, gender || null, address || null, patientNumber, firstName, lastName));
       (await db.exec('COMMIT'));
     } catch (error) {
       try { (await db.exec('ROLLBACK')); } catch (rollbackError) {
-        console.error('Patient registration transaction rollback failed:', rollbackError.message);
+        console.error('Patient registration transaction rollback failed:', rollbackError.code || rollbackError.name || 'database_error');
       }
-      if (error.code === '23505' || String(error.message).includes('UNIQUE')) return json(res, 409, { error: 'An account with that email already exists.' });
+      if (error.code === '23505' || String(error.message).includes('UNIQUE')) {
+        await recordSecurityEvent(req, 'patient.signup_duplicate', { subject: email, statusCode: 409 });
+        return json(res, 409, { error: 'An account with that email already exists.' });
+      }
       throw error;
     }
-    const verificationResult = (await issueEmailVerification(accountId, email));
+    const verificationResult = await issueEmailVerification(accountId, email);
     return json(res, 201, { user: { id: accountId, patientNumber, fullName, email, phone }, verificationRequired: true, ...verificationResult });
   }
 
@@ -773,7 +948,10 @@ async function handle(req, res) {
     const row = (await db.prepare('SELECT a.account_id, a.full_name, a.email, a.phone, a.password_hash, a.password_salt, p.patient_number FROM patient_accounts a LEFT JOIN patients p ON p.account_id=a.account_id WHERE a.email=?').get(email));
     if (!row) return loginAdmin(req, res, email, password, { exposeSetupError: false });
     const ipKey = loginIpKey(req, 'patient');
-    if ((await isRateLimited('patient_login_throttles', email)) || (await isRateLimited('ip_login_throttles', ipKey))) return json(res, 429, { error: 'Too many sign-in attempts. Try again in 15 minutes.' });
+    if ((await isRateLimited('patient_login_throttles', email)) || (await isRateLimited('ip_login_throttles', ipKey))) {
+      await recordSecurityEvent(req, 'patient.login_rate_limited', { subject: email, statusCode: 429 });
+      return json(res, 429, { error: 'Too many sign-in attempts. Try again in 15 minutes.' });
+    }
     const adminCredential = (await db.prepare('SELECT password_hash, password_salt FROM admin_users WHERE email=? AND is_active=1').get(email));
     if (adminCredential) {
       const adminIpKey = loginIpKey(req, 'admin');
@@ -783,13 +961,17 @@ async function handle(req, res) {
       }
     }
     if (password.length > 256 || !verifyHash(password, row.password_salt, row.password_hash)) {
+      await recordSecurityEvent(req, 'patient.login_failed', { subject: email, statusCode: 401 });
       const blocked = (await recordFailedAttempt('patient_login_throttles', email, 10, 15 * 60));
       const ipBlocked = (await recordFailedAttempt('ip_login_throttles', ipKey, 40, 15 * 60));
       const limited = blocked || ipBlocked;
       return json(res, limited ? 429 : 401, { error: limited ? 'Too many sign-in attempts. Try again in 15 minutes.' : 'Email or password is incorrect.' });
     }
     const verified = (await db.prepare('SELECT email_verified_at FROM patient_accounts WHERE account_id=?').get(row.account_id));
-    if (!verified?.email_verified_at) return json(res, 403, { error: 'Verify your email before signing in.', code: 'EMAIL_VERIFICATION_REQUIRED' });
+    if (!verified?.email_verified_at) {
+      await recordSecurityEvent(req, 'patient.login_unverified', { subject: email, statusCode: 403 });
+      return json(res, 403, { error: 'Verify your email before signing in.', code: 'EMAIL_VERIFICATION_REQUIRED' });
+    }
     (await clearFailedAttempts('patient_login_throttles', email));
     (await clearFailedAttempts('ip_login_throttles', ipKey));
     const account = (await ensurePatientNumber(row));
@@ -810,10 +992,10 @@ async function handle(req, res) {
     const body = await readBody(req);
     const fullName = formatPersonName(body.fullName);
     const email = normalizeEmail(body.email);
-    const phone = String(body.phone || '').trim();
+    const phone = normalizePhone(body.phone);
     if (fullName.length < 2) return json(res, 400, { error: 'Enter your full name.' });
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json(res, 400, { error: 'Enter a valid email address.' });
-    if (phone && !/^\+?[\d\s().-]{7,20}$/.test(phone)) return json(res, 400, { error: 'Enter a valid phone number.' });
+    if (phone && !isE164Phone(phone)) return json(res, 400, { error: 'Enter a valid phone number in international format, including + and the country code.' });
     const nameParts = fullName.split(' ');
     const firstName = nameParts.shift();
     const lastName = nameParts.length ? nameParts.pop() : firstName;
@@ -825,7 +1007,7 @@ async function handle(req, res) {
       notify('patients');
       if (emailChanged) {
         (await db.prepare('DELETE FROM auth_sessions WHERE account_id=?').run(account.account_id));
-        (await issueEmailVerification(account.account_id, email));
+        await issueEmailVerification(account.account_id, email);
         return json(res, 200, { user: { id: account.account_id, patientNumber: account.patient_number || '', fullName, email, phone }, verificationRequired: true }, { 'Set-Cookie': cookieExpiry(0) });
       }
       return json(res, 200, { user: { id: account.account_id, patientNumber: account.patient_number || '', fullName, email, phone } });
@@ -864,7 +1046,7 @@ async function handle(req, res) {
           });
         } catch (error) {
           (await db.prepare('DELETE FROM password_reset_tokens WHERE reset_id=?').run(resetId));
-          console.error('Patient password reset email could not be sent:', error.message);
+          console.error('Patient password reset email could not be sent:', error.code || error.name || 'mail_error');
         }
       } else resetCode = code;
     }
@@ -937,7 +1119,10 @@ async function handle(req, res) {
       return json(res, 200, { month, timeZone: CLINIC_TIME_ZONE, openTime: formatSlot(CLINIC_OPEN_HOUR).label, closeTime: formatSlot(CLINIC_CLOSE_HOUR).label, holidays: CLINIC_HOLIDAYS, days });
     }
     const account = (await accountForSession(req));
-    if (!account) return json(res, 401, { error: 'Please sign in again to book an appointment.' });
+    if (!account) {
+      await recordSecurityEvent(req, 'patient.access_denied', { statusCode: 401 });
+      return json(res, 401, { error: 'Please sign in again to book an appointment.' });
+    }
     const patient = (await db.prepare('SELECT patient_id FROM patients WHERE account_id=?').get(account.account_id));
     if (!patient && (url.pathname === '/api/patient/assessments' || url.pathname.startsWith('/api/patient/assessments/'))) return json(res, 404, { error: 'Your patient profile is not available. Please complete your registration first.' });
     if (req.method === 'POST' && url.pathname === '/api/patient/assessments/validate-image') {
@@ -957,9 +1142,10 @@ async function handle(req, res) {
           ? buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
           : buffer.length >= 12 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP';
       if (!mimeMatchesBytes) return json(res, 400, { error: 'The image does not match its declared image format.' });
-      const imageWidth = Math.trunc(Number(body.width || 0));
-      const imageHeight = Math.trunc(Number(body.height || 0));
-      if (!Number.isInteger(imageWidth) || !Number.isInteger(imageHeight) || imageWidth < 320 || imageHeight < 240 || imageWidth > 12000 || imageHeight > 12000) return json(res, 400, { error: 'Each photo must be at least 320 × 240 pixels and no larger than 12,000 pixels per side.' });
+      const dimensions = imageDimensions(buffer, match[1]);
+      if (!dimensions) return json(res, 400, { error: 'The uploaded file is not a complete supported image.' });
+      const { width: imageWidth, height: imageHeight } = dimensions;
+      if (imageWidth < 320 || imageHeight < 240 || imageWidth > 12000 || imageHeight > 12000 || imageWidth * imageHeight > 60_000_000) return json(res, 400, { error: 'Each photo must be at least 320 × 240 pixels and within the supported image dimensions.' });
       const image = {
         kind,
         angle: kind === 'teeth' ? angle : '',
@@ -972,7 +1158,7 @@ async function handle(req, res) {
       try {
         image.workflowResult = await validateDentalImage(image);
       } catch (error) {
-        console.error('Roboflow photo validation failed:', error.code || 'ROBOFLOW_WORKFLOW_ERROR', error.message);
+        console.error('Roboflow photo validation failed:', error.code || 'ROBOFLOW_WORKFLOW_ERROR');
         return json(res, error.status || 503, { error: error.message || 'This image could not be checked. Please try again.', code: error.code || 'ROBOFLOW_WORKFLOW_ERROR' });
       }
       const now = Date.now();
@@ -1009,7 +1195,10 @@ async function handle(req, res) {
     const deletePatientAssessment = url.pathname.match(/^\/api\/patient\/assessments\/([\w-]+)$/);
     if (req.method === 'DELETE' && deletePatientAssessment) {
       const assessmentId = deletePatientAssessment[1];
-      if (!(await db.prepare('SELECT 1 FROM oral_assessments WHERE assessment_id=? AND patient_id=?').get(assessmentId, patient.patient_id))) return json(res, 404, { error: 'Assessment record not found.' });
+      if (!(await db.prepare('SELECT 1 FROM oral_assessments WHERE assessment_id=? AND patient_id=?').get(assessmentId, patient.patient_id))) {
+        await recordSecurityEvent(req, 'patient.assessment_access_denied', { subject: account.email, statusCode: 403 });
+        return json(res, 403, { error: 'You do not have permission to access this resource.' });
+      }
       (await db.exec('BEGIN IMMEDIATE'));
       try {
         (await queueAssessmentFiles(db, patient.patient_id, assessmentId));
@@ -1029,7 +1218,10 @@ async function handle(req, res) {
       const image = (await db.prepare(`SELECT i.storage_path, i.mime_type, i.file_size
         FROM oral_assessment_images i JOIN oral_assessments a ON a.assessment_id=i.assessment_id
         WHERE i.image_id=? AND a.assessment_id=? AND a.patient_id=?`).get(imageId, assessmentId, patient.patient_id));
-      if (!image) return json(res, 404, { error: 'Assessment photo not found.' });
+      if (!image) {
+        await recordSecurityEvent(req, 'patient.assessment_photo_access_denied', { subject: account.email, statusCode: 403 });
+        return json(res, 403, { error: 'You do not have permission to access this resource.' });
+      }
       const filePath = safeAssessmentImagePath(image.storage_path);
       if (!filePath) return json(res, 404, { error: 'Assessment photo not found.' });
       let photo;
@@ -1083,9 +1275,10 @@ async function handle(req, res) {
           totalBytes += buffer.length;
           if (totalBytes > 14 * 1024 * 1024) return json(res, 413, { error: 'Keep the combined assessment images under 14 MB.' });
           const name = stripControlChars(String(item.fileName || 'assessment-photo').replace(/[\\/]/g, '_')).trim().slice(0, 180) || 'assessment-photo';
-          const imageWidth = Math.trunc(Number(item.width || 0));
-          const imageHeight = Math.trunc(Number(item.height || 0));
-          if (!Number.isInteger(imageWidth) || !Number.isInteger(imageHeight) || imageWidth < 320 || imageHeight < 240 || imageWidth > 12000 || imageHeight > 12000) return json(res, 400, { error: 'Each photo must be at least 320 × 240 pixels and no larger than 12,000 pixels per side.' });
+          const dimensions = imageDimensions(buffer, match[1]);
+          if (!dimensions) return json(res, 400, { error: 'An uploaded file is not a complete supported image.' });
+          const { width: imageWidth, height: imageHeight } = dimensions;
+          if (imageWidth < 320 || imageHeight < 240 || imageWidth > 12000 || imageHeight > 12000 || imageWidth * imageHeight > 60_000_000) return json(res, 400, { error: 'Each photo must be at least 320 × 240 pixels and within the supported image dimensions.' });
           images.push({ kind, angle: kind === 'teeth' ? angle : '', name, mimeType: match[1], buffer, imageWidth, imageHeight });
         }
         const requiredAngles = ['front', 'upper', 'lower'];
@@ -1097,7 +1290,7 @@ async function handle(req, res) {
         let result;
         try { result = await analyzeOralHealthImages(images); }
         catch (error) {
-          console.error('Roboflow oral assessment failed:', error.code || 'ROBOFLOW_WORKFLOW_ERROR', error.message);
+          console.error('Roboflow oral assessment failed:', error.code || 'ROBOFLOW_WORKFLOW_ERROR');
           return json(res, error.status || 503, { error: error.message || 'The AI analysis could not be completed. Please try again.', code: error.code || 'ROBOFLOW_WORKFLOW_ERROR' });
         }
         const now = Date.now();
@@ -1334,6 +1527,7 @@ async function handle(req, res) {
 }
 
 const server = createServer((req, res) => {
+  req.clinicResponse = res;
   db.withContext(async () => {
     if (productionMode && process.env.REQUIRE_HTTPS === 'true') {
       const requestPath = new URL(req.url || '/', 'http://localhost').pathname;
@@ -1345,7 +1539,7 @@ const server = createServer((req, res) => {
     auditAdminRequest(req, res);
     await handle(req, res);
   }).catch(error => {
-    console.error('API request failed:', error.message);
+    console.error('API request failed:', error.code || error.name || 'internal_error');
     json(res, error.status || 500, { error: error.status ? error.message : 'The server could not complete the request.' });
   });
 });

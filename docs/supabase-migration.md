@@ -4,9 +4,10 @@
 
 - The Node API uses the `pg` driver and `DATABASE_URL`; application requests no longer open a local SQLite database.
 - `supabase/migrations/20261104000000_initial_schema.sql` creates the PostgreSQL tables, keys, checks, and indexes. It includes patient/admin accounts, sessions and recovery/MFA records, patients, medical history, appointments, visits, conversations/messages, notifications, AI assessments/images, invoices/receipts, goals, reports, and a generic `app_settings` table. The previous SQLite schema had no separate settings table; admin profile settings were stored on the admin account.
-- Row-level security is enabled on application tables and direct grants to the Supabase `anon` and `authenticated` roles are revoked. The current browser still uses the existing Node API and does not query Supabase directly.
+- RLS is enabled on application tables; the security migration revokes `PUBLIC`, `anon`, and `authenticated` table/sequence grants. This denies direct browser/Data API access. The Node API separately scopes patient requests through the authenticated account's linked patient record.
+- This project uses custom password/session authentication rather than Supabase Auth, so `auth.uid()` is not an available per-patient policy identity. A restricted `NOBYPASSRLS` runtime role with verified request claims (or a Supabase Auth migration) is still required before production to make RLS independently enforce row ownership inside the database.
 - Uploaded assessment images remain files under `UPLOADS_DIR`; PostgreSQL stores their metadata and relative paths.
-- Authentication behavior, API routes, password hashing, email verification, password recovery, admin MFA, and same-origin `/api/*` calls remain in the Node app.
+- Authentication behavior, API routes, password hashing, email verification, password recovery, admin MFA, and same-origin `/api/*` calls remain in the Node app. Patient signups verify email before signing in; phone number is optional contact information.
 
 ## Connection configuration
 
@@ -30,6 +31,8 @@ Set these in Render’s private environment settings. Do not send database crede
 | `REQUIRE_HTTPS`, `TRUST_PROXY` | Set both to `true` behind Render’s HTTPS proxy. |
 
 The Node backend connects directly to PostgreSQL, so its database URL is the credential that matters. Supabase’s API keys do not replace `DATABASE_URL`. For Render’s long-running service, use Supabase’s direct connection when the network supports it; otherwise use the **session pooler** connection from the Supabase Connect panel. The app uses explicit `BEGIN`/`COMMIT` transactions, so do not use the transaction pooler. Keep SSL enabled. [Supabase connection guidance](https://supabase.com/docs/guides/database/connecting-to-postgres)
+
+Textbee SMS verification is intentionally disabled. Its sender and verification flow are preserved as commented code references in `server/sms.js` and `server/index.js`; there is no active SMS delivery and no `TEXTBEE_API_KEY` is needed. The phone-verification database migration remains in place for possible future use and does not gate email-verified sign-in.
 
 Run `npm run db:migrate` from an operator environment with the migration connection privately configured. The command applies sorted SQL files once and records each filename in `public.app_schema_migrations`. Do not apply the same changes manually in the Dashboard; use versioned migrations to avoid schema drift. [Supabase migration guidance](https://supabase.com/docs/guides/deployment/database-migrations)
 

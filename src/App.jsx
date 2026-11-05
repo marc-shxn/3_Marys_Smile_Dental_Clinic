@@ -291,7 +291,7 @@ export default function App() {
   if (routePath === '/assessment-history') return withPatientChat(<AssessmentHistory navigate={navigateRoute} />);
   if (routePath === '/patient-registration') return withPatientChat(<PatientRegistration route={route} navigate={navigateRoute} />);
   if (routePath === '/book-appointment') return withPatientChat(<BookAppointment route={route} navigate={navigateRoute} />);
-  if (['/patient-login', '/login', '/create-account', '/forgot-password', '/reset-link-sent', '/reset-password', '/verify-email', '/email-verified'].includes(routePath)) return <PatientAuth route={route} navigate={navigateRoute} />;
+  if (['/patient-login', '/login', '/create-account', '/forgot-password', '/reset-link-sent', '/reset-password', '/verify-email', '/verify-phone', '/email-verified'].includes(routePath)) return <PatientAuth route={route} navigate={navigateRoute} />;
   if (routePath === '/patient-portal') return withPatientChat(<PatientPortal navigate={navigateRoute} />);
   const pages = {
     Overview: <Overview {...common} appointments={appointments} visits={visits} patients={patients} messages={messages} onOpenConversation={openPatientConversation} />,

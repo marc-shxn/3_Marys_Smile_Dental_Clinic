@@ -17,7 +17,7 @@ Render’s local filesystem is ephemeral unless a persistent disk is attached. A
 2. In Render, use build command `npm ci && npm run build`, start command `npm start`, Node 22.13 or newer, one instance, and an attached persistent disk mounted at `/var/data`. Set `UPLOADS_DIR=/var/data/clinic`.
 3. In the Supabase Connect panel, choose the direct connection if the Render network can reach it; otherwise use the shared **session** pooler. Set `DATABASE_URL` privately in Render, not Vercel. Keep TLS enabled. If Node reports an untrusted certificate chain, download the Supabase server root certificate from Database Settings → SSL Configuration, base64-encode the certificate file, and set `DATABASE_SSL_CA_BASE64` in Render. Certificate verification remains enabled. The transaction pooler is not suitable for this app's explicit transactions. [Supabase connection documentation](https://supabase.com/docs/guides/database/connecting-to-postgres)
 4. In a trusted operator environment, set `DATABASE_URL` and run `npm run db:migrate`. Confirm all migrations are recorded. Do not put database credentials in the frontend project.
-5. Configure Render secrets and variables listed below. Configure Resend or SMTP for a dedicated test mailbox. Set a staging Roboflow key only if using synthetic images in its service.
+5. Configure Render secrets and variables listed below. Configure Resend or SMTP for a dedicated test mailbox. Patient registration uses email verification only; phone number is optional. Textbee's adapter is commented out, so no SMS gateway or SMS secret is required. Set a staging Roboflow key only if using synthetic images in its service.
 6. Deploy the frontend to Vercel and replace the Render URL in `vercel.json`; redeploy. Check a patient API call and an admin API call from the Vercel site and confirm session cookies are `Secure`, `HttpOnly`, and `SameSite=Lax`.
 7. Create the first admin using a secured operator shell with `npm run admin:create`, then configure `ADMIN_MFA_ENCRYPTION_KEY` in Render and enroll MFA with `npm run admin:mfa:setup -- admin@example.com`. Never save the printed authenticator secret in source control or a deployment log.
 8. Run the functional and mobile validation checklist below. Do not add real patient data.
@@ -44,7 +44,9 @@ Render’s local filesystem is ephemeral unless a persistent disk is attached. A
 | `SUPABASE_ANON_KEY` | No | Not used by the current app. Never expose service credentials in the browser. |
 | `SUPABASE_SERVICE_ROLE_KEY` | No | Not used by the current app. Keep unset unless a later server-side Data API integration needs it. |
 
-No separate `SESSION_SECRET` is needed in the current design: the server generates random opaque session tokens and stores only their hashes in PostgreSQL. The database URL is itself a highly privileged secret; keep it only in Render, restrict project access, and consider a dedicated least-privilege PostgreSQL runtime role before production.
+No separate `SESSION_SECRET` is needed in the current design: the server generates random opaque session tokens and stores only their hashes in PostgreSQL. The database URL is a highly privileged secret; keep it only in Render. The current RLS setup denies browser roles, and API ownership checks scope patient data, but per-row database RLS is not complete while the backend uses custom sessions and a potentially RLS-bypassing database role. Configure and review a restricted `NOBYPASSRLS` runtime role with verified identity claims before production; see [`security-hardening.md`](security-hardening.md).
+
+Textbee is currently disabled and not part of the signup or verification flow. The commented sender and verification flow are future integration references only. Do not add `TEXTBEE_API_KEY` to Render unless SMS verification is deliberately re-enabled and its provider and carrier requirements are reviewed.
 
 ## Backups and restore
 
@@ -63,8 +65,12 @@ Supabase database backups do not include the files on Render’s disk. A file-on
 - [ ] `npm run build` and `npm run lint` complete successfully.
 - [ ] Vercel serves the frontend on HTTPS and proxies all `/api/*` paths to the intended Render HTTPS origin.
 - [ ] Render uses one Node instance and the persistent disk is mounted and writable only by the app user.
-- [ ] Patient registration, email verification, login/logout, and password recovery work using test accounts.
+- [ ] Patient registration accepts an optional phone number, sends email verification, and allows login after the email code is confirmed.
+- [ ] Login/logout and password recovery work using test accounts.
 - [ ] Admin login, MFA, password/profile changes, admin activity history, and patient record access work.
+- [ ] Verify the fifth signup attempt from an IP is allowed and the next receives the rate-limit warning; verify failed logins and denied access appear in the admin security-events endpoint.
+- [ ] Verify an idle patient/admin session expires after seven days, cross-patient assessment/photo IDs return a generic denial, and patients cannot call admin APIs.
+- [ ] Confirm browser roles have no Supabase table grants and resolve the dedicated `NOBYPASSRLS` runtime-role/per-row policy blocker before production.
 - [ ] Patient management, appointments, visits, messages, reports, and invoices behave as expected.
 - [ ] Synthetic oral assessment photos upload, reach the selected Roboflow staging workflow, appear in history, and can be deleted with their files.
 - [ ] Data and image files remain available after a Render restart.

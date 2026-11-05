@@ -6,13 +6,13 @@ This project contains the public clinic website, patient accounts and appointmen
 
 Requirements: Node.js 22.13 or newer and access to a disposable PostgreSQL database. Never use real patient records or photos for development.
 
-1. Copy `.env.example` to `.env` and privately set `DATABASE_URL`, `UPLOADS_DIR`, and the local testing credentials you need.
+1. Create a local `.env` file (it is ignored by Git) and privately set `DATABASE_URL`, `UPLOADS_DIR`, and the local testing credentials you need. Never commit any `.env*` file.
 2. Run `npm ci`.
 3. Apply the database schema with `npm run db:migrate`.
 4. Create an admin with `npm run admin:create`, then enroll MFA with `npm run admin:mfa:setup -- admin@example.com`.
 5. Run `npm run dev` and open the local Vite address. Vite forwards `/api/*` to the Node backend.
 
-The backend requires a PostgreSQL database; it no longer creates or serves a SQLite database. `npm start` is the production entrypoint and requires `NODE_ENV=production`, `DATABASE_URL`, `UPLOADS_DIR`, Resend or SMTP credentials, Roboflow secrets, and HTTPS proxy configuration. `vite preview` is not a production server. Keep `RESEND_API_KEY` on the server and set `RESEND_FROM` to a sender authorized by your Resend account.
+The backend requires a PostgreSQL database; it no longer creates or serves a SQLite database. `npm start` is the production entrypoint and requires `NODE_ENV=production`, `DATABASE_URL`, `UPLOADS_DIR`, Resend or SMTP credentials, Roboflow secrets, and HTTPS proxy configuration. Patient accounts use email verification only; phone number is optional. The Textbee SMS adapter is commented out for now and does not need a Render secret. `vite preview` is not a production server. Keep mail and AI provider credentials on the server and never expose them in Vite.
 
 To send a one-off test message, set `RESEND_API_KEY` and `TEST_EMAIL_TO` in the local environment and run `npm run email:test`. The command sends a test-only “Hello World” email; it does not expose the API key in the frontend.
 
@@ -20,7 +20,7 @@ To send a one-off test message, set `RESEND_API_KEY` and `TEST_EMAIL_TO` in the 
 
 The intended staging layout is Vercel for the static frontend, Render for one Node backend instance with a persistent disk for uploaded photos, and Supabase PostgreSQL for relational data. `vercel.json` proxies browser `/api/*` requests to the Render service so cookies and API calls remain on the Vercel site origin. Replace the Render URL placeholder after creating the backend service.
 
-Start with [`docs/staging-deployment.md`](docs/staging-deployment.md) and [`docs/supabase-migration.md`](docs/supabase-migration.md). Set secrets in the hosting provider’s secret manager. Do not use real patient photos or account data during staging.
+Start with [`docs/staging-deployment.md`](docs/staging-deployment.md), [`docs/supabase-migration.md`](docs/supabase-migration.md), and [`docs/security-hardening.md`](docs/security-hardening.md). Set secrets in the hosting provider’s secret manager. Do not use real patient photos or account data during staging.
 
 ## Patient routes
 
