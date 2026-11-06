@@ -53,7 +53,16 @@ function patientFromRow(row) {
 const patientSelect = `SELECT p.*, mh.allergies, mh.medications, mh.medical_conditions, mh.serious_illnesses, mh.pregnancy_status, mh.mouth_growths, mh.clinical_notes, mh.responses_json
   FROM patients p LEFT JOIN medical_history mh ON mh.patient_id=p.patient_id`;
 
-async function listPatients(db) { return (await db.prepare(`${patientSelect} ORDER BY p.created_at, p.full_name`).all()).map(patientFromRow); }
+async function listPatients(db) {
+  return (await db.prepare(`${patientSelect}
+    WHERE p.account_id IS NULL
+      OR EXISTS (
+        SELECT 1 FROM patient_accounts pa
+        WHERE pa.account_id=p.account_id AND pa.email_verified_at IS NOT NULL
+      )
+      OR EXISTS (SELECT 1 FROM medical_history mh WHERE mh.patient_id=p.patient_id)
+    ORDER BY p.created_at, p.full_name`).all()).map(patientFromRow);
+}
 async function insertMedicalHistory(db, patientId, record, timestamp) {
   (await db.prepare(`INSERT INTO medical_history (medical_history_id, patient_id, allergies, medications, medical_conditions, serious_illnesses, pregnancy_status, mouth_growths, clinical_notes, responses_json, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
