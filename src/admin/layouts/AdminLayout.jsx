@@ -138,7 +138,7 @@ export default function AdminLayout({activePage,breadcrumbSubpage='',onNavigate,
   if(file.size>2*1024*1024){setSettingsError('Choose a photo smaller than 2 MB.');return;}
   const reader=new FileReader();reader.onload=()=>{setSettingsDraft(current=>({...current,photo:String(reader.result||'')}));setSettingsError('');};reader.onerror=()=>setSettingsError('The selected photo could not be loaded.');reader.readAsDataURL(file);
  }
- async function logOutAdmin(){await signOutAdmin();setProfileOpen(false);setSettingsOpen(false);window.location.assign('/admin/login');}
+ async function logOutAdmin(){await signOutAdmin();setProfileOpen(false);setSettingsOpen(false);window.location.assign('/');}
  function toggleNavigation(){
   if(window.matchMedia('(max-width: 650px)').matches)setMobileOpen(value=>!value);
   else setSidebarCollapsed(value=>!value);
