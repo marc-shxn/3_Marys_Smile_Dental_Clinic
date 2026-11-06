@@ -478,6 +478,25 @@ function normalizePhone(value) {
 function isE164Phone(value) {
   return /^\+[1-9]\d{7,14}$/.test(value);
 }
+const normalizedIdentityName = value => String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+const identityPhoneSuffix = value => String(value || '').replace(/\D/g, '').slice(-10);
+async function findPatientIdentityMatch(fullName, phone, { excludeAccountId = '', verifiedAccountsOnly = false } = {}) {
+  const name = normalizedIdentityName(fullName);
+  const phoneSuffix = identityPhoneSuffix(phone);
+  const accountMatch = await db.prepare(`SELECT account_id FROM patient_accounts
+    WHERE lower(regexp_replace(btrim(full_name), '[[:space:]]+', ' ', 'g'))=?
+      AND right(regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g'), 10)=?
+      AND account_id<>?
+      ${verifiedAccountsOnly ? 'AND email_verified_at IS NOT NULL' : ''}
+    LIMIT 1`).get(name, phoneSuffix, excludeAccountId || '');
+  if (accountMatch) return { kind: 'account', id: accountMatch.account_id };
+  const patientMatch = await db.prepare(`SELECT patient_id FROM patients
+    WHERE account_id IS NULL
+      AND lower(regexp_replace(btrim(full_name), '[[:space:]]+', ' ', 'g'))=?
+      AND right(regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g'), 10)=?
+    LIMIT 1`).get(name, phoneSuffix);
+  return patientMatch ? { kind: 'patient', id: patientMatch.patient_id } : null;
+}
 /* Future Textbee SMS verification adapter. Kept disabled while patient verification is email-only.
 import { sendSms } from './sms.js';
 async function issuePhoneVerification(accountId, email, phone) {
@@ -606,8 +625,11 @@ async function ensurePatientNumber(account) {
       (await db.prepare('UPDATE patients SET patient_number=? WHERE patient_id=?').run(patientNumber, patient.patient_id));
     } else {
       const nameParts = String(account.full_name || '').trim().split(/\s+/).filter(Boolean);
-      (await db.prepare('INSERT INTO patients (patient_id, clinic_id, account_id, full_name, email, phone, patient_number, first_name, last_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-        .run(randomUUID(), 'default-clinic', account.account_id, account.full_name, account.email, account.phone || null, patientNumber, nameParts[0] || '', nameParts.length > 1 ? nameParts.at(-1) : nameParts[0] || ''));
+      (await db.prepare(`INSERT INTO patients (patient_id, clinic_id, account_id, full_name, email, phone, date_of_birth, gender, address, patient_number, first_name, last_name)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(randomUUID(), 'default-clinic', account.account_id, account.full_name, account.email, account.phone || null,
+          account.date_of_birth || null, account.gender || null, account.address || null, patientNumber,
+          account.first_name || nameParts[0] || '', account.last_name || (nameParts.length > 1 ? nameParts.at(-1) : nameParts[0] || '')));
     }
     (await db.exec('COMMIT'));
     return { ...account, patient_number: patientNumber };
@@ -882,9 +904,45 @@ async function handle(req, res) {
       (await recordFailedAttempt('email_verification_throttles', email, 10, 15 * 60));
       return json(res, 400, { error: 'The verification code is invalid or expired. Request a new code.' });
     }
-    (await db.prepare('UPDATE patient_accounts SET email_verified_at=CURRENT_TIMESTAMP::text WHERE account_id=?').run(verification.account_id));
-    (await db.prepare('UPDATE email_verification_tokens SET used_at=CURRENT_TIMESTAMP::text WHERE verification_id=?').run(verification.verification_id));
+    (await db.exec('BEGIN'));
+    try {
+      const account = await db.prepare('SELECT * FROM patient_accounts WHERE account_id=?').get(verification.account_id);
+      if (!account) {
+        await db.exec('ROLLBACK');
+        return json(res, 404, { error: 'This account could not be found. Create the account again.' });
+      }
+      const identityKey = `${normalizedIdentityName(account.full_name)}:${identityPhoneSuffix(account.phone)}`;
+      await db.prepare('SELECT pg_advisory_xact_lock(hashtext(?))').run(identityKey);
+      const duplicateIdentity = await findPatientIdentityMatch(account.full_name, account.phone, { excludeAccountId: account.account_id, verifiedAccountsOnly: true });
+      if (duplicateIdentity) {
+        await db.exec('ROLLBACK');
+        return json(res, 409, { error: 'A patient account already exists for this name and phone number. Use the original account or contact the clinic for help.' });
+      }
+      await db.prepare('UPDATE patient_accounts SET email_verified_at=COALESCE(email_verified_at, CURRENT_TIMESTAMP::text) WHERE account_id=?').run(account.account_id);
+      await db.prepare('UPDATE email_verification_tokens SET used_at=CURRENT_TIMESTAMP::text WHERE verification_id=?').run(verification.verification_id);
+      const existingPatient = await db.prepare('SELECT patient_id FROM patients WHERE account_id=?').get(account.account_id);
+      if (existingPatient) {
+        await db.prepare(`UPDATE patients SET full_name=?, email=?, phone=?, date_of_birth=?, gender=?, address=?, first_name=?, last_name=?
+          WHERE patient_id=?`).run(account.full_name, account.email, account.phone || null, account.date_of_birth || null,
+          account.gender || null, account.address || null, account.first_name || '', account.last_name || '', existingPatient.patient_id);
+      } else {
+        const patientNumber = await nextPatientNumber();
+        const nameParts = String(account.full_name || '').trim().split(/\s+/).filter(Boolean);
+        await db.prepare(`INSERT INTO patients (patient_id, clinic_id, account_id, full_name, email, phone, date_of_birth, gender, address, patient_number, first_name, last_name)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (account_id) DO NOTHING`)
+          .run(randomUUID(), 'default-clinic', account.account_id, account.full_name, account.email, account.phone || null,
+            account.date_of_birth || null, account.gender || null, account.address || null, patientNumber,
+            account.first_name || nameParts[0] || '', account.last_name || (nameParts.length > 1 ? nameParts.at(-1) : nameParts[0] || ''));
+      }
+      await db.exec('COMMIT');
+    } catch (error) {
+      try { await db.exec('ROLLBACK'); } catch (rollbackError) {
+        console.error('Patient verification transaction rollback failed:', rollbackError.code || rollbackError.name || 'database_error');
+      }
+      throw error;
+    }
     (await clearFailedAttempts('email_verification_throttles', email));
+    notify('patients');
     return json(res, 200, { ok: true });
   }
 
@@ -905,7 +963,7 @@ async function handle(req, res) {
       return json(res, 400, { error: 'Some account details are too long. Please review the name and contact fields.' });
     }
     if (!isGmailAddress(email)) return json(res, 400, { error: 'Enter a valid Gmail address ending in @gmail.com.' });
-    if (phone && !isE164Phone(phone)) return json(res, 400, { error: 'Enter a valid phone number in international format, including + and the country code.' });
+    if (!phone || !isE164Phone(phone)) return json(res, 400, { error: 'Enter a valid phone number in international format, including + and the country code.' });
     if (password.length < 8 || password.length > 256) return json(res, 400, { error: 'Use a password between 8 and 256 characters.' });
     if (dateOfBirth && (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)
       || !Number.isFinite(Date.parse(`${dateOfBirth}T00:00:00Z`))
@@ -918,12 +976,33 @@ async function handle(req, res) {
     }
     const credentials = passwordHash(password);
     const accountId = randomUUID();
-    const patientId = randomUUID();
-    const patientNumber = (await nextPatientNumber());
+    let existingEmailAccount = null;
     try {
       (await db.exec('BEGIN'));
-      (await db.prepare('INSERT INTO patient_accounts (account_id, full_name, first_name, middle_name, last_name, email, phone, date_of_birth, gender, address, password_hash, password_salt, phone_verification_required) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, FALSE)').run(accountId, fullName, firstName, middleName || null, lastName, email, phone, dateOfBirth || '', gender || '', address || null, credentials.hash, credentials.salt));
-      (await db.prepare('INSERT INTO patients (patient_id, clinic_id, account_id, full_name, email, phone, date_of_birth, gender, address, patient_number, first_name, last_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(patientId, 'default-clinic', accountId, fullName, email, phone || null, dateOfBirth || null, gender || null, address || null, patientNumber, firstName, lastName));
+      const identityKey = `${normalizedIdentityName(fullName)}:${identityPhoneSuffix(phone)}`;
+      await db.prepare('SELECT pg_advisory_xact_lock(hashtext(?))').run(identityKey);
+      existingEmailAccount = await db.prepare('SELECT account_id, full_name, email, phone, email_verified_at FROM patient_accounts WHERE lower(email)=lower(?)').get(email);
+      if (existingEmailAccount?.email_verified_at) {
+        await db.exec('ROLLBACK');
+        return json(res, 409, { error: 'An account with this email already exists. Log in or use Forgot password.' });
+      }
+      if (existingEmailAccount && await isRateLimited('email_verification_throttles', email)) {
+        await db.exec('ROLLBACK');
+        return json(res, 429, { error: 'A verification code was recently sent. Wait a moment, then use Resend code.' });
+      }
+      const duplicateIdentity = await findPatientIdentityMatch(fullName, phone, { excludeAccountId: existingEmailAccount?.account_id || '' });
+      if (duplicateIdentity) {
+        await db.exec('ROLLBACK');
+        await recordSecurityEvent(req, 'patient.signup_duplicate_identity', { subject: email, statusCode: 409 });
+        return json(res, 409, { error: 'A registration already exists for this name and phone number. Use the original email address to verify it, or contact the clinic for help.' });
+      }
+      if (existingEmailAccount) {
+        await db.prepare(`UPDATE patient_accounts SET full_name=?, first_name=?, middle_name=?, last_name=?, phone=?, date_of_birth=?, gender=?, address=?, password_hash=?, password_salt=?
+          WHERE account_id=?`).run(fullName, firstName, middleName || null, lastName, phone, dateOfBirth || '', gender || '', address || null, credentials.hash, credentials.salt, existingEmailAccount.account_id);
+      } else {
+        await db.prepare('INSERT INTO patient_accounts (account_id, full_name, first_name, middle_name, last_name, email, phone, date_of_birth, gender, address, password_hash, password_salt, phone_verification_required) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, FALSE)')
+          .run(accountId, fullName, firstName, middleName || null, lastName, email, phone, dateOfBirth || '', gender || '', address || null, credentials.hash, credentials.salt);
+      }
       (await db.exec('COMMIT'));
     } catch (error) {
       try { (await db.exec('ROLLBACK')); } catch (rollbackError) {
@@ -931,12 +1010,14 @@ async function handle(req, res) {
       }
       if (error.code === '23505' || String(error.message).includes('UNIQUE')) {
         await recordSecurityEvent(req, 'patient.signup_duplicate', { subject: email, statusCode: 409 });
-        return json(res, 409, { error: 'An account with that email already exists.' });
+        return json(res, 409, { error: 'An account with that email already exists. Log in or use Resend code on the verification page.' });
       }
       throw error;
     }
-    const verificationResult = await issueEmailVerification(accountId, email);
-    return json(res, 201, { user: { id: accountId, patientNumber, fullName, email, phone }, verificationRequired: true, ...verificationResult });
+    const finalAccountId = existingEmailAccount?.account_id || accountId;
+    if (existingEmailAccount) await recordFailedAttempt('email_verification_throttles', email, 3, 60 * 60);
+    const verificationResult = await issueEmailVerification(finalAccountId, email);
+    return json(res, existingEmailAccount ? 200 : 201, { user: { id: finalAccountId, patientNumber: '', fullName, email, phone }, verificationRequired: true, ...verificationResult });
   }
 
   if (req.method === 'POST' && url.pathname === '/api/auth/login') {

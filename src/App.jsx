@@ -152,6 +152,12 @@ export default function App() {
   }, []);
   useLayoutEffect(() => { scrollPageToTop(); }, [route, page]);
   const navigateRoute = path => { window.history.pushState({}, '', path); scrollPageToTop(); setRoute(path); };
+  const logOutAdminToHome = async () => {
+    await signOutAdmin();
+    window.history.replaceState({}, '', '/');
+    scrollPageToTop();
+    setRoute('/');
+  };
   const navigateAdmin = nextPage => { setPage(nextPage); setBillingSubpage(''); if (nextPage !== 'Messages') setMessageTarget(null); };
   const openPatientConversation = patient => {
     setMessageTarget(patient);
@@ -308,5 +314,5 @@ export default function App() {
     return <PublicHome navigate={navigateRoute} />;
   }
   const unreadMessages = messages.filter(message => !message.isDraft && !message.archived && !message.trashed && message.direction !== 'sent' && !message.isRead).length;
-  return <AdminLayout activePage={page} breadcrumbSubpage={page === 'Billing' ? billingSubpage : ''} onNavigate={navigateAdmin} notifications={notifications} unreadMessages={unreadMessages} onMarkNotificationsRead={markNotificationsRead} onMarkNotificationRead={markNotificationRead} onOpenMessageNotification={openMessageNotification} onClearReadNotifications={clearReadNotifications}>{pages[page] || pages.Overview}</AdminLayout>;
+  return <AdminLayout activePage={page} breadcrumbSubpage={page === 'Billing' ? billingSubpage : ''} onNavigate={navigateAdmin} onLogout={logOutAdminToHome} notifications={notifications} unreadMessages={unreadMessages} onMarkNotificationsRead={markNotificationsRead} onMarkNotificationRead={markNotificationRead} onOpenMessageNotification={openMessageNotification} onClearReadNotifications={clearReadNotifications}>{pages[page] || pages.Overview}</AdminLayout>;
 }

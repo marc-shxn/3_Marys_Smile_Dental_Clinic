@@ -23,7 +23,7 @@ async function request(path, options = {}) {
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    if (response.status === 401 && (path === 'session' || body.code === 'ADMIN_SESSION_REQUIRED')) {
+    if (response.status === 401 && path !== 'logout' && (path === 'session' || body.code === 'ADMIN_SESSION_REQUIRED')) {
       clearAdminHint();
       window.dispatchEvent(new Event('admin-auth-expired'));
     }

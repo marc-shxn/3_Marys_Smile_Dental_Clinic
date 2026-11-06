@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { loadAdminActivity, loadAdminSession, signOutAdmin, updateAdminPassword, updateAdminProfile } from '../adminAuth.js';
+import { loadAdminActivity, loadAdminSession, updateAdminPassword, updateAdminProfile } from '../adminAuth.js';
 import './AdminLayout.css';
 const nav=[['Overview','overview'],['Schedule','schedule'],['Patients','patients'],['Messages','messages'],['Billing','billing'],['Reports','reports']];
 
@@ -77,7 +77,7 @@ function PasswordVisibilityButton({ visible, onClick, label }) {
  </button>;
 }
 
-export default function AdminLayout({activePage,breadcrumbSubpage='',onNavigate,children,notifications=[],unreadMessages=0,onMarkNotificationsRead,onClearReadNotifications,onMarkNotificationRead,onOpenMessageNotification}){
+export default function AdminLayout({activePage,breadcrumbSubpage='',onNavigate,onLogout,children,notifications=[],unreadMessages=0,onMarkNotificationsRead,onClearReadNotifications,onMarkNotificationRead,onOpenMessageNotification}){
  const [mobileOpen,setMobileOpen]=useState(false);
  const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
  const [notificationsOpen,setNotificationsOpen]=useState(false);
@@ -138,7 +138,7 @@ export default function AdminLayout({activePage,breadcrumbSubpage='',onNavigate,
   if(file.size>2*1024*1024){setSettingsError('Choose a photo smaller than 2 MB.');return;}
   const reader=new FileReader();reader.onload=()=>{setSettingsDraft(current=>({...current,photo:String(reader.result||'')}));setSettingsError('');};reader.onerror=()=>setSettingsError('The selected photo could not be loaded.');reader.readAsDataURL(file);
  }
- async function logOutAdmin(){await signOutAdmin();setProfileOpen(false);setSettingsOpen(false);window.location.assign('/admin/login');}
+ async function logOutAdmin(){setProfileOpen(false);setSettingsOpen(false);await onLogout?.();}
  function toggleNavigation(){
   if(window.matchMedia('(max-width: 650px)').matches)setMobileOpen(value=>!value);
   else setSidebarCollapsed(value=>!value);
